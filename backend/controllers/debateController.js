@@ -1,6 +1,7 @@
 import Debate from "../models/debateModel.js";
 import Category from "../models/categoryModel.js";
 import User from "../models/userModel.js";
+import Comment from "../models/commentModel.js";
 
 // Create a new debate
 const createDebate = async (req, res) => {
@@ -160,11 +161,129 @@ const deleteDebate = async (req, res) => {
 	}
 };
 
+// Get hot topics (combination of upvotes, comments, and recency)
+const getHotTopics = async (req, res) => {
+	try {
+		const debates = await Debate.find()
+			.populate("author", "name username")
+			.lean();
+
+		// Calculate hot score for each debate
+		// Score = (upvotes * 2) + (comments * 3) + recency bonus
+		const now = new Date();
+		const scoredDebates = debates.map((debate) => {
+			const ageInHours = (now - new Date(debate.createdAt)) / (1000 * 60 * 60);
+			const recencyBonus = Math.max(0, 48 - ageInHours) * 0.5; // Bonus for debates < 48 hours old
+			
+			const hotScore = 
+				(debate.upvotes?.length || 0) * 2 + 
+				(debate.commentsCount || 0) * 3 + 
+				recencyBonus;
+
+			return { ...debate, hotScore };
+		});
+
+		// Sort by hot score and take top 5
+		const hotTopics = scoredDebates
+			.sort((a, b) => b.hotScore - a.hotScore)
+			.slice(0, 5);
+
+		res.status(200).json(hotTopics);
+	} catch (error) {
+		res.status(500).json({ error: error.message });
+		console.log("Error in getHotTopics: ", error.message);
+	}
+};
+
+// Get suggested debates for user (based on categories they engage with)
+const getSuggestedDebates = async (req, res) => {
+	try {
+		const userId = req.user?._id;
+
+		if (!userId) {
+			// If not logged in, return random popular debates
+			const debates = await Debate.find()
+				.populate("author", "name username")
+				.sort({ "upvotes.length": -1 })
+				.limit(5);
+			return res.status(200).json(debates);
+		}
+
+		// Get categories the user has engaged with (commented or created debates)
+		const userDebates = await Debate.find({ author: userId }).select("category");
+		const userComments = await Comment.find({ author: userId }).populate({
+			path: "debate",
+			select: "category",
+		});
+
+		const engagedCategories = new Set();
+		userDebates.forEach((d) => engagedCategories.add(d.category?.toLowerCase()));
+		userComments.forEach((c) => {
+			if (c.debate?.category) {
+				engagedCategories.add(c.debate.category.toLowerCase());
+			}
+		});
+
+		let suggestions;
+
+		if (engagedCategories.size > 0) {
+			// Find debates in categories user engages with, excluding their own
+			suggestions = await Debate.find({
+				author: { $ne: userId },
+				category: { $regex: new RegExp([...engagedCategories].join("|"), "i") },
+			})
+				.populate("author", "name username")
+				.sort({ createdAt: -1 })
+				.limit(5);
+		}
+
+		// If not enough suggestions, fill with popular debates
+		if (!suggestions || suggestions.length < 5) {
+			const existingIds = suggestions?.map((d) => d._id) || [];
+			const additionalDebates = await Debate.find({
+				_id: { $nin: existingIds },
+				author: { $ne: userId },
+			})
+				.populate("author", "name username")
+				.sort({ createdAt: -1 })
+				.limit(5 - (suggestions?.length || 0));
+
+			suggestions = [...(suggestions || []), ...additionalDebates];
+		}
+
+		res.status(200).json(suggestions);
+	} catch (error) {
+		res.status(500).json({ error: error.message });
+		console.log("Error in getSuggestedDebates: ", error.message);
+	}
+};
+
+// Get debates by category (for filtering)
+const getDebatesByCategory = async (req, res) => {
+	try {
+		const { category } = req.params;
+
+		const debates = await Debate.find({
+			category: { $regex: new RegExp(`^${category}$`, "i") },
+		})
+			.populate("author", "name username")
+			.sort({ createdAt: -1 });
+
+		res.status(200).json(debates);
+	} catch (error) {
+		res.status(500).json({ error: error.message });
+		console.log("Error in getDebatesByCategory: ", error.message);
+	}
+};
+
 export { 
 	createDebate, 
 	getDebates, 
 	getDebate, 
 	toggleUpvote, 
 	searchCategories,
-	deleteDebate 
+	deleteDebate,
+	getHotTopics,
+	getSuggestedDebates,
+	getDebatesByCategory,
 };

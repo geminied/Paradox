@@ -3,7 +3,9 @@ import {
 	Flex,
 	Text,
 	VStack,
+	HStack,
 	Spinner,
+	Badge,
 	useDisclosure,
 	useColorModeValue,
 } from "@chakra-ui/react";
@@ -11,15 +13,17 @@ import { useState, useEffect } from "react";
 import { useRecoilValue } from "recoil";
 import userAtom from "../atoms/userAtom";
 import DebateCard from "../components/DebateCard";
-import CreateDebateModal from "../components/createDebateModal";
+import CreateDebateModal from "../components/CreateDebateModal";
 import useShowToast from "../hooks/useShowToast";
+import { FiX } from "react-icons/fi";
 
-const HomePage = () => {
+const HomePage = ({ categoryFilter, setCategoryFilter }) => {
 	const user = useRecoilValue(userAtom);
 	const showToast = useShowToast();
 	const { isOpen, onOpen, onClose } = useDisclosure();
 	
 	const [debates, setDebates] = useState([]);
+	const [filteredDebates, setFilteredDebates] = useState([]);
 	const [isLoading, setIsLoading] = useState(true);
 
 	const cardBg = useColorModeValue("white", "#101010");
@@ -47,12 +51,58 @@ const HomePage = () => {
 		fetchDebates();
 	}, [showToast]);
 
+	// Filter debates when categoryFilter changes
+	useEffect(() => {
+		if (categoryFilter) {
+			const filtered = debates.filter(
+				(d) => d.category?.toLowerCase() === categoryFilter.toLowerCase()
+			);
+			setFilteredDebates(filtered);
+		} else {
+			setFilteredDebates(debates);
+		}
+	}, [categoryFilter, debates]);
+
 	const handleDebateCreated = (newDebate) => {
 		setDebates([newDebate, ...debates]);
 	};
 
+	const displayedDebates = categoryFilter ? filteredDebates : debates;
+
 	return (
 		<Box>
+			{/* Category Filter Banner */}
+			{categoryFilter && (
+				<Box
+					bg={cardBg}
+					border="1px"
+					borderColor="purple.500"
+					borderRadius="xl"
+					p={3}
+					mb={4}
+				>
+					<HStack justify="space-between">
+						<HStack spacing={2}>
+							<Text fontSize="sm" color={mutedText}>
+								Showing debates in:
+							</Text>
+							<Badge colorScheme="purple" borderRadius="full" px={2}>
+								{categoryFilter}
+							</Badge>
+						</HStack>
+						<Box
+							as="button"
+							p={1}
+							borderRadius="full"
+							_hover={{ bg: hoverBg }}
+							onClick={() => setCategoryFilter(null)}
+						>
+							<FiX size={16} color="#888" />
+						</Box>
+					</HStack>
+				</Box>
+			)}
+
 			{/* Create Debate Input - Threads style */}
 			{user && (
 				<Box
@@ -95,16 +145,21 @@ const HomePage = () => {
 			)}
 
 			{/* Empty state */}
-			{!isLoading && debates.length === 0 && (
+			{!isLoading && displayedDebates.length === 0 && (
 				<Flex justify="center" align="center" py={10}>
-					<Text color={mutedText}>No debates yet. Start one!</Text>
+					<Text color={mutedText}>
+						{categoryFilter 
+							? `No debates in "${categoryFilter}" yet.` 
+							: "No debates yet. Start one!"
+						}
+					</Text>
 				</Flex>
 			)}
 
 			{/* Debates Feed */}
-			{!isLoading && debates.length > 0 && (
+			{!isLoading && displayedDebates.length > 0 && (
 				<VStack spacing={4} align="stretch">
-					{debates.map((debate) => (
+					{displayedDebates.map((debate) => (
 						<DebateCard key={debate._id} debate={debate} />
 					))}
 				</VStack>

@@ -20,6 +20,9 @@ const Header = () => {
 	const isDebateDetailPage = location.pathname.startsWith("/debate/");
 	const isDebatesActive = location.pathname === "/" || isDebateDetailPage;
 	const isCompetitionsActive = location.pathname === "/competitions";
+	
+	// Only show tabs on home page and competitions page
+	const showTabs = location.pathname === "/" || location.pathname === "/competitions";
 
 	// Hide header on debate detail page
 	if (isDebateDetailPage) {
@@ -60,8 +63,8 @@ const Header = () => {
 				)}
 			</Flex>
 
-			{/* Tab Navigation - Only show when logged in */}
-			{user && (
+			{/* Tab Navigation - Only show on home and competitions pages */}
+			{user && showTabs && (
 				<Flex
 					borderBottom="1px"
 					borderColor={borderColor}
