@@ -4,6 +4,7 @@ import connectDB from "./db/connectDB.js";
 import cookieParser from "cookie-parser";
 import userRoutes from "./routes/userRoutes.js";
 import debateRoutes from "./routes/debateRoutes.js";
+import commentRoutes from "./routes/commentRoutes.js";
 import cors from "cors";
 
 dotenv.config();
@@ -22,5 +23,6 @@ app.use(cors());
 // Routes
 app.use("/api/users", userRoutes);
 app.use("/api/debates", debateRoutes);
+app.use("/api/comments", commentRoutes);
 
 app.listen(PORT, () => console.log(`Server started at http://localhost:${PORT}`));
