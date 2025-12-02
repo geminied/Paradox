@@ -9,6 +9,7 @@ import {
 	useColorModeValue,
 } from "@chakra-ui/react";
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useRecoilValue } from "recoil";
 import userAtom from "../atoms/userAtom";
 import { FiMessageCircle, FiArrowUp } from "react-icons/fi";
@@ -16,6 +17,7 @@ import { formatDistanceToNowStrict } from "date-fns";
 import useShowToast from "../hooks/useShowToast";
 
 const DebateCard = ({ debate, onUpdate }) => {
+	const navigate = useNavigate();
 	const currentUser = useRecoilValue(userAtom);
 	const showToast = useShowToast();
 	
@@ -30,6 +32,10 @@ const DebateCard = ({ debate, onUpdate }) => {
 
 	const hasUpvoted = currentUser && upvotes.includes(currentUser._id);
 	const timeAgo = formatDistanceToNowStrict(new Date(debate.createdAt), { addSuffix: false });
+
+	const handleCardClick = () => {
+		navigate(`/debate/${debate._id}`);
+	};
 
 	const handleUpvote = async (e) => {
 		e.stopPropagation();
@@ -71,6 +77,7 @@ const DebateCard = ({ debate, onUpdate }) => {
 			_hover={{ bg: hoverBg }}
 			transition="all 0.15s"
 			cursor="pointer"
+			onClick={handleCardClick}
 		>
 			{/* Author info */}
 			<HStack spacing={3} mb={3}>
