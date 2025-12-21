@@ -4,6 +4,66 @@ import bcrypt from "bcryptjs";
 import generateTokenAndSetCookie from "../utils/helpers/generateTokenAndSetCookie.js";
 import mongoose from "mongoose";
 
+// Toggle bookmark on a debate
+const toggleBookmark = async (req, res) => {
+	try {
+		const { debateId } = req.params;
+		const userId = req.user._id;
+
+		if (!mongoose.Types.ObjectId.isValid(debateId)) {
+			return res.status(400).json({ error: "Invalid debate ID" });
+		}
+
+		const debate = await Debate.findById(debateId);
+		if (!debate) {
+			return res.status(404).json({ error: "Debate not found" });
+		}
+
+		const user = await User.findById(userId);
+		const isBookmarked = user.bookmarks.includes(debateId);
+
+		if (isBookmarked) {
+			// Remove bookmark
+			await User.findByIdAndUpdate(userId, { $pull: { bookmarks: debateId } });
+			res.status(200).json({ message: "Bookmark removed", isBookmarked: false });
+		} else {
+			// Add bookmark
+			await User.findByIdAndUpdate(userId, { $push: { bookmarks: debateId } });
+			res.status(200).json({ message: "Debate bookmarked", isBookmarked: true });
+		}
+	} catch (err) {
+		res.status(500).json({ error: err.message });
+		console.log("Error in toggleBookmark: ", err.message);
+	}
+};
+
+// Get user's bookmarked debates
+const getBookmarkedDebates = async (req, res) => {
+	try {
+		const userId = req.user._id;
+
+		const user = await User.findById(userId).populate({
+			path: "bookmarks",
+			populate: {
+				path: "author",
+				select: "name username",
+			},
+		});
+
+		if (!user) {
+			return res.status(404).json({ error: "User not found" });
+		}
+
+		// Return bookmarks in reverse order (most recently bookmarked first)
+		const bookmarkedDebates = user.bookmarks.reverse();
+
+		res.status(200).json(bookmarkedDebates);
+	} catch (err) {
+		res.status(500).json({ error: err.message });
+		console.log("Error in getBookmarkedDebates: ", err.message);
+	}
+};
+
 const getUserProfile = async (req, res) => {
 	// We will fetch user profile either with username or userId
 	// query is either username or userId
@@ -58,6 +118,9 @@ const signupUser = async (req, res) => {
 				username: newUser.username,
 				bio: newUser.bio,
 				profilePic: newUser.profilePic,
+				following: newUser.following || [],
+				followers: newUser.followers || [],
+				bookmarks: newUser.bookmarks || [],
 			});
 		} else {
 			res.status(400).json({ error: "Invalid user data" });
@@ -86,6 +149,9 @@ const loginUser = async (req, res) => {
 			username: user.username,
 			bio: user.bio,
 			profilePic: user.profilePic,
+			following: user.following || [],
+			followers: user.followers || [],
+			bookmarks: user.bookmarks || [],
 		});
 	} catch (error) {
 		res.status(500).json({ error: error.message });
@@ -230,4 +296,4 @@ const getSuggestedUsers = async (req, res) => {
 	}
 };
 
-export { signupUser, loginUser, logoutUser, updateUser, getUserProfile, followUnfollowUser, getFollowingFeed, getSuggestedUsers };
+export { signupUser, loginUser, logoutUser, updateUser, getUserProfile, followUnfollowUser, getFollowingFeed, getSuggestedUsers, toggleBookmark, getBookmarkedDebates };

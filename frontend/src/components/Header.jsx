@@ -3,7 +3,7 @@ import { useRecoilValue, useSetRecoilState } from "recoil";
 import userAtom from "../atoms/userAtom";
 import { RxAvatar } from "react-icons/rx";
 import { Link as RouterLink, useLocation, useNavigate } from "react-router-dom";
-import { FiLogOut } from "react-icons/fi";
+import { FiLogOut, FiBookmark } from "react-icons/fi";
 import useLogout from "../hooks/useLogout";
 import authScreenAtom from "../atoms/authAtom";
 
@@ -159,6 +159,19 @@ const Header = ({ activeTab, onTabChange }) => {
 
 					{user && (
 						<HStack spacing={1}>
+							<Tooltip label="Saved Debates" hasArrow>
+								<IconButton
+									as={RouterLink}
+									to="/saved"
+									icon={<FiBookmark size={18} />}
+									variant="ghost"
+									size="sm"
+									aria-label="Saved Debates"
+									color={mutedText}
+									borderRadius="full"
+									_hover={{ color: textColor, bg: pillBg }}
+								/>
+							</Tooltip>
 							<Tooltip label="Profile" hasArrow>
 								<IconButton
 									as={RouterLink}

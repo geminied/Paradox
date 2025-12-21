@@ -37,6 +37,12 @@ const userSchema = mongoose.Schema(
 				ref: "User",
 			},
 		],
+		bookmarks: [
+			{
+				type: mongoose.Schema.Types.ObjectId,
+				ref: "Debate",
+			},
+		],
 	},
 	{
 		timestamps: true,

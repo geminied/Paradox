@@ -7,6 +7,7 @@ import HomePage from "./pages/HomePage";
 import AuthPage from "./pages/AuthPage";
 import CompetitionsPage from "./pages/CompetitionsPage";
 import DebateDetailPage from "./pages/DebateDetailPage";
+import SavedDebatesPage from "./pages/SavedDebatesPage";
 import { useRecoilValue } from "recoil";
 import userAtom from "./atoms/userAtom";
 import UpdateProfilePage from "./pages/UpdateProfilePage";
@@ -65,6 +66,7 @@ function App() {
 					<Route path='/auth' element={!user ? <AuthPage /> : <Navigate to='/' />} />
 					<Route path='/update' element={user ? <UpdateProfilePage /> : <Navigate to='/auth' />} />
 					<Route path='/competitions' element={user ? <CompetitionsPage /> : <Navigate to='/auth' />} />
+					<Route path='/saved' element={user ? <SavedDebatesPage /> : <Navigate to='/auth' />} />
 					<Route path='/debate/:debateId' element={user ? <DebateDetailPage /> : <Navigate to='/auth' />} />
 					<Route path='/:username' element={<UserPage />} />
 				</Routes>

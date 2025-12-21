@@ -13,7 +13,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useRecoilState } from "recoil";
 import userAtom from "../atoms/userAtom";
-import { FiMessageCircle, FiArrowUp } from "react-icons/fi";
+import { FiMessageCircle, FiArrowUp, FiBookmark } from "react-icons/fi";
 import { formatDistanceToNowStrict } from "date-fns";
 import useShowToast from "../hooks/useShowToast";
 
@@ -25,6 +25,8 @@ const DebateCard = ({ debate, onUpdate, isFromFollowingFeed = false }) => {
 	const [upvotes, setUpvotes] = useState(debate.upvotes || []);
 	const [isUpvoting, setIsUpvoting] = useState(false);
 	const [isFollowLoading, setIsFollowLoading] = useState(false);
+	const [isBookmarked, setIsBookmarked] = useState(false);
+	const [isBookmarking, setIsBookmarking] = useState(false);
 
 	const cardBg = useColorModeValue("white", "#101010");
 	const borderColor = useColorModeValue("gray.200", "#333333");
@@ -39,8 +41,54 @@ const DebateCard = ({ debate, onUpdate, isFromFollowingFeed = false }) => {
 	// Determine if following: use isFromFollowingFeed prop OR check currentUser.following array
 	const isFollowing = isFromFollowingFeed || (currentUser?.following?.includes(debate.author?._id) ?? false);
 
+	// Check if debate is bookmarked
+	useEffect(() => {
+		if (currentUser?.bookmarks) {
+			setIsBookmarked(currentUser.bookmarks.includes(debate._id));
+		}
+	}, [currentUser?.bookmarks, debate._id]);
+
 	const handleCardClick = () => {
 		navigate(`/debate/${debate._id}`);
+	};
+
+	const handleBookmark = async (e) => {
+		e.stopPropagation();
+		
+		if (!currentUser) {
+			showToast("Error", "Please login to bookmark debates", "error");
+			return;
+		}
+
+		if (isBookmarking) return;
+
+		setIsBookmarking(true);
+		try {
+			const res = await fetch(`/api/users/bookmark/${debate._id}`, {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+			});
+			const data = await res.json();
+			if (!res.ok) throw new Error(data.error);
+
+			// Update local state
+			setIsBookmarked(data.isBookmarked);
+
+			// Update user atom with new bookmarks list
+			const updatedBookmarks = data.isBookmarked
+				? [...(currentUser.bookmarks || []), debate._id]
+				: (currentUser.bookmarks || []).filter(id => id !== debate._id);
+			
+			const updatedUser = { ...currentUser, bookmarks: updatedBookmarks };
+			setCurrentUser(updatedUser);
+			localStorage.setItem("user-paradox", JSON.stringify(updatedUser));
+			
+			showToast("Success", data.message, "success");
+		} catch (error) {
+			showToast("Error", error.message, "error");
+		} finally {
+			setIsBookmarking(false);
+		}
 	};
 
 	const handleFollow = async (e) => {
@@ -199,6 +247,16 @@ const DebateCard = ({ debate, onUpdate, isFromFollowingFeed = false }) => {
 					<FiMessageCircle size={18} />
 					<Text fontSize="sm">{debate.commentsCount || 0}</Text>
 				</HStack>
+				<Box flex={1} />
+				<Box
+					color={isBookmarked ? "yellow.500" : mutedText}
+					_hover={{ color: "yellow.500" }}
+					cursor="pointer"
+					onClick={handleBookmark}
+					opacity={isBookmarking ? 0.5 : 1}
+				>
+					<FiBookmark size={18} fill={isBookmarked ? "currentColor" : "none"} />
+				</Box>
 			</HStack>
 		</Box>
 	);

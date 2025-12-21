@@ -12,9 +12,9 @@ import {
 } from "@chakra-ui/react";
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { useRecoilValue } from "recoil";
+import { useRecoilState } from "recoil";
 import userAtom from "../atoms/userAtom";
-import { FiArrowLeft, FiArrowUp, FiMessageCircle } from "react-icons/fi";
+import { FiArrowLeft, FiArrowUp, FiMessageCircle, FiBookmark } from "react-icons/fi";
 import { formatDistanceToNowStrict } from "date-fns";
 import useShowToast from "../hooks/useShowToast";
 import ThreadedCommentCard from "../components/ThreadedCommentCard";
@@ -23,7 +23,7 @@ import AddCommentModal from "../components/AddCommentModal";
 const DebateDetailPage = () => {
 	const { debateId } = useParams();
 	const navigate = useNavigate();
-	const currentUser = useRecoilValue(userAtom);
+	const [currentUser, setCurrentUser] = useRecoilState(userAtom);
 	const showToast = useShowToast();
 	const { isOpen, onOpen, onClose } = useDisclosure();
 
@@ -34,12 +34,21 @@ const DebateDetailPage = () => {
 	const [replyingTo, setReplyingTo] = useState(null);
 	const [upvotes, setUpvotes] = useState([]);
 	const [isUpvoting, setIsUpvoting] = useState(false);
+	const [isBookmarked, setIsBookmarked] = useState(false);
+	const [isBookmarking, setIsBookmarking] = useState(false);
 
 	const cardBg = useColorModeValue("white", "#101010");
 	const borderColor = useColorModeValue("gray.200", "#333333");
 	const textColor = useColorModeValue("gray.900", "white");
 	const mutedText = useColorModeValue("gray.500", "#888888");
 	const hoverBg = useColorModeValue("gray.50", "#1a1a1a");
+
+	// Check if debate is bookmarked
+	useEffect(() => {
+		if (currentUser?.bookmarks && debateId) {
+			setIsBookmarked(currentUser.bookmarks.includes(debateId));
+		}
+	}, [currentUser?.bookmarks, debateId]);
 
 	useEffect(() => {
 		const fetchData = async () => {
@@ -88,6 +97,42 @@ const DebateDetailPage = () => {
 			showToast("Error", error.message, "error");
 		} finally {
 			setIsUpvoting(false);
+		}
+	};
+
+	const handleBookmark = async () => {
+		if (!currentUser) {
+			showToast("Error", "Please login to bookmark debates", "error");
+			return;
+		}
+		if (isBookmarking) return;
+
+		setIsBookmarking(true);
+		try {
+			const res = await fetch(`/api/users/bookmark/${debateId}`, {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+			});
+			const data = await res.json();
+			if (!res.ok) throw new Error(data.error);
+
+			// Update local state
+			setIsBookmarked(data.isBookmarked);
+
+			// Update user atom with new bookmarks list
+			const updatedBookmarks = data.isBookmarked
+				? [...(currentUser.bookmarks || []), debateId]
+				: (currentUser.bookmarks || []).filter(id => id !== debateId);
+			
+			const updatedUser = { ...currentUser, bookmarks: updatedBookmarks };
+			setCurrentUser(updatedUser);
+			localStorage.setItem("user-paradox", JSON.stringify(updatedUser));
+			
+			showToast("Success", data.message, "success");
+		} catch (error) {
+			showToast("Error", error.message, "error");
+		} finally {
+			setIsBookmarking(false);
 		}
 	};
 
@@ -243,6 +288,16 @@ const DebateDetailPage = () => {
 						<FiMessageCircle size={18} />
 						<Text fontSize="sm">{stats.total}</Text>
 					</HStack>
+					<Box flex={1} />
+					<Box
+						color={isBookmarked ? "yellow.500" : mutedText}
+						_hover={{ color: "yellow.500" }}
+						cursor="pointer"
+						onClick={handleBookmark}
+						opacity={isBookmarking ? 0.5 : 1}
+					>
+						<FiBookmark size={18} fill={isBookmarked ? "currentColor" : "none"} />
+					</Box>
 				</HStack>
 			</Box>
 
