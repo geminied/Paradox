@@ -104,7 +104,7 @@ const CommentCard = ({ comment, currentUserStance, onUpdate }) => {
 			bg={cardBg}
 			border="1px"
 			borderColor={borderColor}
-			borderRadius="lg"
+			borderRadius="3xl"
 			p={3}
 		>
 			{/* Author info */}

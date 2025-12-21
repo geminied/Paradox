@@ -1,9 +1,11 @@
 import { Avatar } from "@chakra-ui/avatar";
 import { Box, Flex, Link, Text, VStack, HStack, Grid, GridItem, Badge } from "@chakra-ui/layout";
 import { Button, Stat, StatGroup, StatHelpText, StatLabel, StatNumber, useColorModeValue } from "@chakra-ui/react";
-import { useRecoilValue } from "recoil";
+import { useState } from "react";
+import { useRecoilState } from "recoil";
 import userAtom from "../atoms/userAtom";
 import { Link as RouterLink } from "react-router-dom";
+import useShowToast from "../hooks/useShowToast";
 
 // Static data for demonstration
 const STATIC_STATS = {
@@ -25,8 +27,14 @@ const STATIC_HISTORY = [
 ];
 
 const UserHeader = ({ user }) => {
-	const currentUser = useRecoilValue(userAtom);
+	const [currentUser, setCurrentUser] = useRecoilState(userAtom);
+	const showToast = useShowToast();
 	const isOwnProfile = currentUser?._id === user._id;
+	
+	// Check if current user is following this user - derive from global state
+	const isFollowing = currentUser?.following?.includes(user._id) || false;
+	const [isUpdating, setIsUpdating] = useState(false);
+	const [followersCount, setFollowersCount] = useState(user.followers?.length || 0);
 
 	// Balanced color scheme: clean with subtle accent colors
 	const cardBg = useColorModeValue("white", "#101010");
@@ -35,6 +43,43 @@ const UserHeader = ({ user }) => {
 	const mutedText = useColorModeValue("gray.500", "#888888");
 	const accentColor = useColorModeValue("purple.500", "purple.400");
 	const accentBg = useColorModeValue("purple.50", "rgba(128, 90, 213, 0.12)");
+
+	// Handle follow/unfollow
+	const handleFollowUnfollow = async () => {
+		if (!currentUser) {
+			showToast("Error", "Please login to follow users", "error");
+			return;
+		}
+		if (isUpdating) return;
+
+		setIsUpdating(true);
+		try {
+			const res = await fetch(`/api/users/follow/${user._id}`, {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+			});
+			const data = await res.json();
+			if (!res.ok) throw new Error(data.error);
+
+			// Update local followers count
+			setFollowersCount((prev) => (data.isFollowing ? prev + 1 : prev - 1));
+			
+			// Update global state and localStorage
+			const updatedFollowing = data.isFollowing
+				? [...(currentUser.following || []), user._id]
+				: (currentUser.following || []).filter(id => id !== user._id);
+			
+			const updatedUser = { ...currentUser, following: updatedFollowing };
+			setCurrentUser(updatedUser);
+			localStorage.setItem("user-paradox", JSON.stringify(updatedUser));
+			
+			showToast("Success", data.message, "success");
+		} catch (error) {
+			showToast("Error", error.message, "error");
+		} finally {
+			setIsUpdating(false);
+		}
+	};
 
 	const EmpathyScoreCard = () => (
 		<Box
@@ -200,7 +245,7 @@ const UserHeader = ({ user }) => {
 	return (
 		<Box>
 			{/* Profile Header */}
-			<Flex align="center" mb={6} gap={6}>
+			<Flex align="center" mb={4} gap={6}>
 				<Avatar
 					size="xl"
 					name={user.name}
@@ -219,8 +264,28 @@ const UserHeader = ({ user }) => {
 				</VStack>
 			</Flex>
 
-			{/* Edit Profile Button - Threads style */}
-			{isOwnProfile && (
+			{/* Followers / Following Stats */}
+			<HStack spacing={6} mb={4}>
+				<HStack spacing={1}>
+					<Text fontWeight="bold" color={textColor}>
+						{followersCount}
+					</Text>
+					<Text color={mutedText} fontSize="sm">
+						Followers
+					</Text>
+				</HStack>
+				<HStack spacing={1}>
+					<Text fontWeight="bold" color={textColor}>
+						{user.following?.length || 0}
+					</Text>
+					<Text color={mutedText} fontSize="sm">
+						Following
+					</Text>
+				</HStack>
+			</HStack>
+
+			{/* Edit Profile / Follow Button */}
+			{isOwnProfile ? (
 				<Link as={RouterLink} to='/update' _hover={{ textDecoration: "none" }}>
 					<Button
 						w="full"
@@ -234,6 +299,27 @@ const UserHeader = ({ user }) => {
 						Edit profile
 					</Button>
 				</Link>
+			) : (
+				<Button
+					w="full"
+					bg={isFollowing ? "transparent" : accentColor}
+					color={isFollowing ? textColor : "white"}
+					variant={isFollowing ? "outline" : "solid"}
+					borderColor={isFollowing ? borderColor : accentColor}
+					fontWeight="semibold"
+					mb={8}
+					isLoading={isUpdating}
+					onClick={handleFollowUnfollow}
+					_hover={{ 
+						bg: isFollowing 
+							? useColorModeValue("gray.50", "#1a1a1a") 
+							: useColorModeValue("purple.600", "purple.500"),
+						transform: "translateY(-1px)"
+					}}
+					transition="all 0.15s"
+				>
+					{isFollowing ? "Unfollow" : "Follow"}
+				</Button>
 			)}
 
 			{/* Empathy Score Card */}

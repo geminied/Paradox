@@ -25,6 +25,24 @@ const userSchema = mongoose.Schema(
 			type: String,
 			default: "",
 		},
+		followers: [
+			{
+				type: mongoose.Schema.Types.ObjectId,
+				ref: "User",
+			},
+		],
+		following: [
+			{
+				type: mongoose.Schema.Types.ObjectId,
+				ref: "User",
+			},
+		],
+		bookmarks: [
+			{
+				type: mongoose.Schema.Types.ObjectId,
+				ref: "Debate",
+			},
+		],
 	},
 	{
 		timestamps: true,
