@@ -213,7 +213,7 @@ const CreateDebateModal = ({ isOpen, onClose, onDebateCreated }) => {
 						border={canPost ? "none" : "1px"}
 						borderColor={borderColor}
 						fontWeight="semibold"
-						borderRadius="lg"
+						borderRadius="3xl"
 						px={6}
 						size="sm"
 						_hover={{ opacity: canPost ? 0.8 : 1 }}

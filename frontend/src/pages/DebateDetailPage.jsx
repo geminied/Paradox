@@ -179,7 +179,7 @@ const DebateDetailPage = () => {
 				bg={cardBg}
 				border="1px"
 				borderColor={borderColor}
-				borderRadius="xl"
+				borderRadius="3xl"
 				p={5}
 				mb={4}
 			>
@@ -283,7 +283,7 @@ const DebateDetailPage = () => {
 					bg={cardBg}
 					border="1px"
 					borderColor={borderColor}
-					borderRadius="xl"
+					borderRadius="3xl"
 					p={4}
 					mb={6}
 					cursor="pointer"
@@ -301,7 +301,7 @@ const DebateDetailPage = () => {
 							bg={textColor}
 							color={cardBg}
 							fontWeight="semibold"
-							borderRadius="lg"
+							borderRadius="3xl"
 							px={4}
 							py={1.5}
 							fontSize="sm"
