@@ -38,8 +38,16 @@ const DebateCard = ({ debate, onUpdate, isFromFollowingFeed = false }) => {
 	const timeAgo = formatDistanceToNowStrict(new Date(debate.createdAt), { addSuffix: false });
 	const isOwnPost = currentUser?._id === debate.author?._id;
 
-	// Determine if following: use isFromFollowingFeed prop OR check currentUser.following array
-	const isFollowing = isFromFollowingFeed || (currentUser?.following?.includes(debate.author?._id) ?? false);
+	// Determine if following: check currentUser.following array
+	// Use state to ensure reactivity when following from any component
+	const [isFollowing, setIsFollowing] = useState(
+		currentUser?.following?.includes(debate.author?._id) ?? false
+	);
+
+	// Sync isFollowing state when currentUser.following changes (from other components)
+	useEffect(() => {
+		setIsFollowing(currentUser?.following?.includes(debate.author?._id) ?? false);
+	}, [currentUser?.following, debate.author?._id]);
 
 	// Check if debate is bookmarked
 	useEffect(() => {
@@ -118,6 +126,9 @@ const DebateCard = ({ debate, onUpdate, isFromFollowingFeed = false }) => {
 			const updatedUser = { ...currentUser, following: updatedFollowing };
 			setCurrentUser(updatedUser);
 			localStorage.setItem("user-paradox", JSON.stringify(updatedUser));
+			
+			// Update local state for immediate UI feedback
+			setIsFollowing(data.isFollowing);
 			
 			showToast("Success", data.message, "success");
 		} catch (error) {

@@ -2,7 +2,7 @@ import { Avatar } from "@chakra-ui/avatar";
 import { Box, Flex, Link, Text, VStack, HStack, Grid, GridItem, Badge } from "@chakra-ui/layout";
 import { Button, Stat, StatGroup, StatHelpText, StatLabel, StatNumber, useColorModeValue } from "@chakra-ui/react";
 import { useState } from "react";
-import { useRecoilValue } from "recoil";
+import { useRecoilState } from "recoil";
 import userAtom from "../atoms/userAtom";
 import { Link as RouterLink } from "react-router-dom";
 import useShowToast from "../hooks/useShowToast";
@@ -27,14 +27,12 @@ const STATIC_HISTORY = [
 ];
 
 const UserHeader = ({ user }) => {
-	const currentUser = useRecoilValue(userAtom);
+	const [currentUser, setCurrentUser] = useRecoilState(userAtom);
 	const showToast = useShowToast();
 	const isOwnProfile = currentUser?._id === user._id;
 	
-	// Check if current user is following this user
-	const [isFollowing, setIsFollowing] = useState(
-		user.followers?.includes(currentUser?._id) || false
-	);
+	// Check if current user is following this user - derive from global state
+	const isFollowing = currentUser?.following?.includes(user._id) || false;
 	const [isUpdating, setIsUpdating] = useState(false);
 	const [followersCount, setFollowersCount] = useState(user.followers?.length || 0);
 
@@ -63,8 +61,18 @@ const UserHeader = ({ user }) => {
 			const data = await res.json();
 			if (!res.ok) throw new Error(data.error);
 
-			setIsFollowing(data.isFollowing);
+			// Update local followers count
 			setFollowersCount((prev) => (data.isFollowing ? prev + 1 : prev - 1));
+			
+			// Update global state and localStorage
+			const updatedFollowing = data.isFollowing
+				? [...(currentUser.following || []), user._id]
+				: (currentUser.following || []).filter(id => id !== user._id);
+			
+			const updatedUser = { ...currentUser, following: updatedFollowing };
+			setCurrentUser(updatedUser);
+			localStorage.setItem("user-paradox", JSON.stringify(updatedUser));
+			
 			showToast("Success", data.message, "success");
 		} catch (error) {
 			showToast("Error", error.message, "error");

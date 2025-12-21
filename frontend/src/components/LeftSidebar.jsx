@@ -11,7 +11,7 @@ import {
 } from "@chakra-ui/react";
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { useRecoilValue } from "recoil";
+import { useRecoilState } from "recoil";
 import userAtom from "../atoms/userAtom";
 import { FiUsers } from "react-icons/fi";
 import useShowToast from "../hooks/useShowToast";
@@ -19,7 +19,7 @@ import useShowToast from "../hooks/useShowToast";
 const LeftSidebar = () => {
 	const showToast = useShowToast();
 	const navigate = useNavigate();
-	const currentUser = useRecoilValue(userAtom);
+	const [currentUser, setCurrentUser] = useRecoilState(userAtom);
 
 	const [suggestedUsers, setSuggestedUsers] = useState([]);
 	const [isLoadingUsers, setIsLoadingUsers] = useState(true);
@@ -68,6 +68,14 @@ const LeftSidebar = () => {
 			});
 			const data = await res.json();
 			if (!res.ok) throw new Error(data.error);
+
+			// Update global state and localStorage
+			if (data.isFollowing) {
+				const updatedFollowing = [...(currentUser.following || []), userId];
+				const updatedUser = { ...currentUser, following: updatedFollowing };
+				setCurrentUser(updatedUser);
+				localStorage.setItem("user-paradox", JSON.stringify(updatedUser));
+			}
 
 			// Remove user from suggestions after following
 			setSuggestedUsers((prev) => prev.filter((u) => u._id !== userId));

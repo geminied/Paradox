@@ -220,7 +220,8 @@ const followUnfollowUser = async (req, res) => {
 			return res.status(404).json({ error: "User not found" });
 		}
 
-		const isFollowing = currentUser.following.includes(id);
+		// Convert ObjectIds to strings for proper comparison
+		const isFollowing = currentUser.following.map(f => f.toString()).includes(id);
 
 		if (isFollowing) {
 			// Unfollow
