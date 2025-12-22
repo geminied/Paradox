@@ -27,6 +27,7 @@ import { useNavigate } from "react-router-dom";
 import { useRecoilState } from "recoil";
 import userAtom from "../atoms/userAtom";
 import useShowToast from "../hooks/useShowToast";
+import JudgeProfileSection from "../components/JudgeProfileSection";
 import { 
 	FiUser, 
 	FiAtSign, 
@@ -36,6 +37,7 @@ import {
 	FiX,
 	FiEdit3,
 	FiShield,
+	FiAward,
 } from "react-icons/fi";
 
 export default function UpdateProfilePage() {
@@ -139,6 +141,12 @@ export default function UpdateProfilePage() {
 						<HStack spacing={2}>
 							<Icon as={FiShield} boxSize={4} />
 							<Text>Security</Text>
+						</HStack>
+					</Tab>
+					<Tab _selected={{ bg: textColor, color: bgColor }}>
+						<HStack spacing={2}>
+							<Icon as={FiAward} boxSize={4} />
+							<Text>Judge Profile</Text>
 						</HStack>
 					</Tab>
 				</TabList>
@@ -362,6 +370,17 @@ export default function UpdateProfilePage() {
 								</form>
 							</VStack>
 						</Box>
+					</TabPanel>
+
+					{/* Judge Profile Tab */}
+					<TabPanel p={0}>
+						<JudgeProfileSection 
+							user={user} 
+							onUpdate={(updatedUser) => {
+								setUser(updatedUser);
+								localStorage.setItem("user-paradox", JSON.stringify(updatedUser));
+							}}
+						/>
 					</TabPanel>
 				</TabPanels>
 			</Tabs>

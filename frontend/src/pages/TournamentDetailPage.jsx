@@ -42,6 +42,9 @@ import { format, formatDistanceToNowStrict } from "date-fns";
 import useShowToast from "../hooks/useShowToast";
 import EditTournamentModal from "../components/EditTournamentModal";
 import MotionList from "../components/MotionList";
+import RegisterTeamModal from "../components/RegisterTeamModal";
+import TeamCard from "../components/TeamCard";
+import JudgeAssignmentModal from "../components/JudgeAssignmentModal";
 
 const TournamentDetailPage = () => {
 	const { tournamentId } = useParams();
@@ -54,9 +57,13 @@ const TournamentDetailPage = () => {
 	const [isLoading, setIsLoading] = useState(true);
 	const [isDeleting, setIsDeleting] = useState(false);
 	const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
+	const [teams, setTeams] = useState([]);
+	const [loadingTeams, setLoadingTeams] = useState(false);
 
 	const { isOpen: isEditOpen, onOpen: onEditOpen, onClose: onEditClose } = useDisclosure();
 	const { isOpen: isDeleteOpen, onOpen: onDeleteOpen, onClose: onDeleteClose } = useDisclosure();
+	const { isOpen: isRegisterTeamOpen, onOpen: onRegisterTeamOpen, onClose: onRegisterTeamClose } = useDisclosure();
+	const { isOpen: isJudgeAssignmentOpen, onOpen: onJudgeAssignmentOpen, onClose: onJudgeAssignmentClose } = useDisclosure();
 
 	const cardBg = useColorModeValue("white", "#101010");
 	const borderColor = useColorModeValue("gray.200", "#333333");
@@ -82,7 +89,23 @@ const TournamentDetailPage = () => {
 			}
 		};
 
+		const fetchTeams = async () => {
+			setLoadingTeams(true);
+			try {
+				const res = await fetch(`/api/teams/tournament/${tournamentId}`);
+				const data = await res.json();
+				if (res.ok) {
+					setTeams(data);
+				}
+			} catch (error) {
+				console.error("Error fetching teams:", error);
+			} finally {
+				setLoadingTeams(false);
+			}
+		};
+
 		fetchTournament();
+		fetchTeams();
 	}, [tournamentId, showToast, navigate]);
 
 	const getStatusColor = (status) => {
@@ -216,6 +239,14 @@ const TournamentDetailPage = () => {
 								>
 									Edit
 								</MenuItem>
+								<MenuItem 
+									icon={<FiUsers />} 
+									onClick={onJudgeAssignmentOpen}
+									bg={cardBg}
+									_hover={{ bg: hoverBg }}
+								>
+									Manage Judges
+								</MenuItem>
 								{tournament.status === "draft" && (
 									<MenuItem 
 										icon={<FiPlay />} 
@@ -314,13 +345,26 @@ const TournamentDetailPage = () => {
 					</HStack>
 					<HStack spacing={1}>
 						<FiUsers size={14} />
-						<Text>{tournament.participants?.length || 0}/{tournament.maxTeams} teams</Text>
+						<Text>{teams.length}/{tournament.maxTeams} teams</Text>
 					</HStack>
 					<HStack spacing={1}>
 						<FiClock size={14} />
 						<Text>{tournament.numberOfRounds} rounds</Text>
 					</HStack>
 				</HStack>
+
+				{/* View Rounds Button - Only for ongoing/completed tournaments */}
+				{(tournament.status === "ongoing" || tournament.status === "completed") && (
+					<Button
+						mt={4}
+						w="full"
+						colorScheme="blue"
+						borderRadius="full"
+						onClick={() => navigate(`/tournament/${tournamentId}/rounds`)}
+					>
+						View Rounds & Draw
+					</Button>
+				)}
 			</Box>
 
 			{/* Tournament Details Card */}
@@ -346,27 +390,85 @@ const TournamentDetailPage = () => {
 					</HStack>
 					<HStack justify="space-between">
 						<Text fontSize="sm" color={mutedText}>Speaker score range</Text>
-						<Text fontSize="sm" color={textColor}>{tournament.speakerScoreRange?.min} - {tournament.speakerScoreRange?.max}</Text>
-					</HStack>
-					<HStack justify="space-between">
-						<Text fontSize="sm" color={mutedText}>Registration deadline</Text>
-						<Text fontSize="sm" color={textColor}>{format(new Date(tournament.registrationDeadline), "MMM d, yyyy")}</Text>
-					</HStack>
+					<Text fontSize="sm" color={textColor}>
+						{tournament.speakerScoreRange?.min || 70} - {tournament.speakerScoreRange?.max || 80}
+					</Text>
+				</HStack>
+				<HStack justify="space-between">
+					<Text fontSize="sm" color={mutedText}>Registration deadline</Text>
+					<Text fontSize="sm" color={textColor}>
+						{tournament.registrationDeadline && !isNaN(new Date(tournament.registrationDeadline).getTime())
+							? format(new Date(tournament.registrationDeadline), "MMM d, yyyy")
+							: "Not set"}
+					</Text>
+				</HStack>
+			</VStack>
+		</Box>
+
+		{/* Motions Section */}
+		<Box
+			bg={cardBg}
+			border="1px"
+			borderColor={borderColor}
+			borderRadius="3xl"
+			p={5}
+			mb={4}
+		>
+			<MotionList tournament={tournament} />
+		</Box>
+
+		{/* Teams Section */}
+		<Box
+			bg={cardBg}
+			border="1px"
+			borderColor={borderColor}
+			borderRadius="3xl"
+			p={5}
+		>
+			<HStack justify="space-between" mb={4}>
+				<Text fontWeight="semibold" fontSize="lg" color={textColor}>
+					Registered Teams ({teams.length})
+				</Text>
+				{!isCreator && tournament.status === "registration" && (
+					<Button
+						size="sm"
+						colorScheme="blue"
+						borderRadius="full"
+						onClick={onRegisterTeamOpen}
+					>
+						Register Team
+					</Button>
+				)}
+			</HStack>
+
+			{loadingTeams ? (
+				<Flex justify="center" py={8}>
+					<Spinner />
+				</Flex>
+			) : teams.length === 0 ? (
+				<Text color={mutedText} textAlign="center" py={8}>
+					No teams registered yet
+				</Text>
+			) : (
+				<VStack spacing={3} align="stretch">
+					{teams.map((team) => (
+						<TeamCard key={team._id} team={team} onView={() => {}} />
+					))}
 				</VStack>
-			</Box>
+			)}
+		</Box>
 
-			{/* Motions Section */}
-			<Box
-				bg={cardBg}
-				border="1px"
-				borderColor={borderColor}
-				borderRadius="3xl"
-				p={5}
-			>
-				<MotionList tournament={tournament} />
-			</Box>
+		{/* Register Team Modal */}
+		<RegisterTeamModal
+			isOpen={isRegisterTeamOpen}
+			onClose={onRegisterTeamClose}
+			tournament={tournament}
+			onTeamRegistered={(newTeam) => {
+				setTeams(prev => [...prev, newTeam]);
+			}}
+		/>
 
-			{/* Edit Modal */}
+		{/* Edit Modal */}
 			{isCreator && (
 				<EditTournamentModal
 					isOpen={isEditOpen}
@@ -407,6 +509,24 @@ const TournamentDetailPage = () => {
 					</AlertDialogContent>
 				</AlertDialogOverlay>
 			</AlertDialog>
+
+			{/* Judge Assignment Modal */}
+			{isCreator && (
+				<JudgeAssignmentModal
+					isOpen={isJudgeAssignmentOpen}
+					onClose={onJudgeAssignmentClose}
+					tournament={tournament}
+					onJudgeAdded={() => {
+						// Refresh tournament to get updated judge list
+						const fetchTournament = async () => {
+							const res = await fetch(`/api/tournaments/${tournamentId}`);
+							const data = await res.json();
+							if (res.ok) setTournament(data);
+						};
+						fetchTournament();
+					}}
+				/>
+			)}
 		</Box>
 	);
 };

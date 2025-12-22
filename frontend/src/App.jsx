@@ -10,6 +10,7 @@ import TournamentDetailPage from "./pages/TournamentDetailPage";
 import MotionArchivePage from "./pages/MotionArchivePage";
 import DebateDetailPage from "./pages/DebateDetailPage";
 import SavedDebatesPage from "./pages/SavedDebatesPage";
+import RoundsPage from "./pages/RoundsPage";
 import { useRecoilValue } from "recoil";
 import userAtom from "./atoms/userAtom";
 import UpdateProfilePage from "./pages/UpdateProfilePage";
@@ -69,6 +70,7 @@ function App() {
 					<Route path='/update' element={user ? <UpdateProfilePage /> : <Navigate to='/auth' />} />
 					<Route path='/competitions' element={user ? <CompetitionsPage /> : <Navigate to='/auth' />} />
 					<Route path='/tournament/:tournamentId' element={user ? <TournamentDetailPage /> : <Navigate to='/auth' />} />
+					<Route path='/tournament/:tournamentId/rounds' element={user ? <RoundsPage /> : <Navigate to='/auth' />} />
 					<Route path='/motions/archive' element={<MotionArchivePage />} />
 					<Route path='/saved' element={user ? <SavedDebatesPage /> : <Navigate to='/auth' />} />
 					<Route path='/debate/:debateId' element={user ? <DebateDetailPage /> : <Navigate to='/auth' />} />

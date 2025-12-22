@@ -32,6 +32,7 @@ const CreateTournamentModal = ({ isOpen, onClose, onTournamentCreated }) => {
 		category: "open",
 		startDate: "",
 		endDate: "",
+		registrationDeadline: "",
 		maxTeams: 32,
 		numberOfRounds: 5,
 	});
@@ -58,6 +59,9 @@ const CreateTournamentModal = ({ isOpen, onClose, onTournamentCreated }) => {
 			return;
 		}
 
+		// Use registration deadline if provided, otherwise use start date
+		const registrationDeadline = formData.registrationDeadline || formData.startDate;
+
 		setIsLoading(true);
 		try {
 			const res = await fetch("/api/tournaments/create", {
@@ -65,7 +69,7 @@ const CreateTournamentModal = ({ isOpen, onClose, onTournamentCreated }) => {
 				headers: { "Content-Type": "application/json" },
 				body: JSON.stringify({
 					...formData,
-					registrationDeadline: formData.startDate,
+					registrationDeadline,
 					breakingTeams: 8,
 				}),
 			});
@@ -74,7 +78,8 @@ const CreateTournamentModal = ({ isOpen, onClose, onTournamentCreated }) => {
 			if (!res.ok) throw new Error(data.error);
 
 			showToast("Success", "Tournament created!", "success");
-			onTournamentCreated(data);
+			// Backend returns { tournament, rounds, message } so extract tournament
+			onTournamentCreated(data.tournament || data);
 			handleClose();
 		} catch (error) {
 			showToast("Error", error.message, "error");
@@ -91,6 +96,7 @@ const CreateTournamentModal = ({ isOpen, onClose, onTournamentCreated }) => {
 			category: "open",
 			startDate: "",
 			endDate: "",
+			registrationDeadline: "",
 			maxTeams: 32,
 			numberOfRounds: 5,
 		});
@@ -200,7 +206,7 @@ const CreateTournamentModal = ({ isOpen, onClose, onTournamentCreated }) => {
 								{/* Date row */}
 								<HStack spacing={3} w="full">
 									<VStack align="start" spacing={1} flex={1}>
-										<Text fontSize="xs" color={mutedText}>Start</Text>
+										<Text fontSize="xs" color={mutedText}>Tournament Start</Text>
 										<Input
 											name="startDate"
 											type="date"
@@ -213,7 +219,7 @@ const CreateTournamentModal = ({ isOpen, onClose, onTournamentCreated }) => {
 										/>
 									</VStack>
 									<VStack align="start" spacing={1} flex={1}>
-										<Text fontSize="xs" color={mutedText}>End</Text>
+										<Text fontSize="xs" color={mutedText}>Tournament End</Text>
 										<Input
 											name="endDate"
 											type="date"
@@ -226,6 +232,22 @@ const CreateTournamentModal = ({ isOpen, onClose, onTournamentCreated }) => {
 										/>
 									</VStack>
 								</HStack>
+
+								{/* Registration Deadline */}
+								<VStack align="start" spacing={1} w="full">
+									<Text fontSize="xs" color={mutedText}>Team Registration Closes</Text>
+									<Input
+										name="registrationDeadline"
+										type="date"
+										value={formData.registrationDeadline}
+										onChange={handleChange}
+										placeholder="Leave empty to use tournament start date"
+										size="sm"
+										borderRadius="lg"
+										borderColor={borderColor}
+										color={textColor}
+									/>
+								</VStack>
 
 								{/* Settings row */}
 								<HStack spacing={3} w="full">

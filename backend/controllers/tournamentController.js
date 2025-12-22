@@ -1,5 +1,8 @@
 import Tournament from "../models/tournamentModel.js";
 import User from "../models/userModel.js";
+import Round from "../models/roundModel.js";
+import DebateRoom from "../models/debateRoomModel.js";
+import { generateCompleteDraw } from "../services/drawGenerator.js";
 
 // Create a new tournament
 const createTournament = async (req, res) => {
@@ -51,10 +54,29 @@ const createTournament = async (req, res) => {
 
 		await newTournament.save();
 
+		// Automatically create rounds for the tournament
+		const rounds = [];
+		const totalRounds = numberOfRounds || 5;
+		
+		for (let i = 1; i <= totalRounds; i++) {
+			const round = new Round({
+				tournament: newTournament._id,
+				roundNumber: i,
+				roundType: "preliminary",
+				status: "scheduled",
+			});
+			await round.save();
+			rounds.push(round);
+		}
+
 		// Populate creator info
 		await newTournament.populate("creator", "name username");
 
-		res.status(201).json(newTournament);
+		res.status(201).json({
+			tournament: newTournament,
+			rounds: rounds,
+			message: `Tournament created successfully with ${totalRounds} rounds`,
+		});
 	} catch (error) {
 		res.status(500).json({ error: error.message });
 		console.log("Error in createTournament: ", error.message);
@@ -260,6 +282,263 @@ const updateTournamentStatus = async (req, res) => {
 	}
 };
 
+// Add judge to tournament pool
+const addJudgeToTournament = async (req, res) => {
+	try {
+		const { tournamentId } = req.params;
+		const { judgeId } = req.body;
+		const userId = req.user._id;
+
+		const tournament = await Tournament.findById(tournamentId);
+
+		if (!tournament) {
+			return res.status(404).json({ error: "Tournament not found" });
+		}
+
+		// Only tournament creator can add judges
+		if (tournament.creator.toString() !== userId.toString()) {
+			return res.status(403).json({ error: "Only tournament creator can add judges" });
+		}
+
+		// Check if judge exists
+		const judge = await User.findById(judgeId);
+		if (!judge) {
+			return res.status(404).json({ error: "Judge not found" });
+		}
+
+		// Check if judge is already added
+		if (tournament.judges.includes(judgeId)) {
+			return res.status(400).json({ error: "Judge already added to this tournament" });
+		}
+
+		// Add judge to tournament pool
+		tournament.judges.push(judgeId);
+		await tournament.save();
+
+		await tournament.populate("judges", "name username institution judgeProfile");
+
+		res.status(200).json({ 
+			message: "Judge added successfully", 
+			judges: tournament.judges 
+		});
+	} catch (error) {
+		res.status(500).json({ error: error.message });
+		console.log("Error in addJudgeToTournament: ", error.message);
+	}
+};
+
+// Remove judge from tournament pool
+const removeJudgeFromTournament = async (req, res) => {
+	try {
+		const { tournamentId, judgeId } = req.params;
+		const userId = req.user._id;
+
+		const tournament = await Tournament.findById(tournamentId);
+
+		if (!tournament) {
+			return res.status(404).json({ error: "Tournament not found" });
+		}
+
+		// Only tournament creator can remove judges
+		if (tournament.creator.toString() !== userId.toString()) {
+			return res.status(403).json({ error: "Only tournament creator can remove judges" });
+		}
+
+		// Check if judge is in the tournament
+		if (!tournament.judges.includes(judgeId)) {
+			return res.status(400).json({ error: "Judge not found in tournament pool" });
+		}
+
+		// Don't allow removing judges if tournament is ongoing
+		if (tournament.status === "ongoing") {
+			return res.status(400).json({ 
+				error: "Cannot remove judges from ongoing tournament" 
+			});
+		}
+
+		// Remove judge
+		tournament.judges = tournament.judges.filter(
+			id => id.toString() !== judgeId.toString()
+		);
+		await tournament.save();
+
+		await tournament.populate("judges", "name username institution judgeProfile");
+
+		res.status(200).json({ 
+			message: "Judge removed successfully", 
+			judges: tournament.judges 
+		});
+	} catch (error) {
+		res.status(500).json({ error: error.message });
+		console.log("Error in removeJudgeFromTournament: ", error.message);
+	}
+};
+
+// Get judges for a tournament
+const getJudgesForTournament = async (req, res) => {
+	try {
+		const { tournamentId } = req.params;
+
+		const tournament = await Tournament.findById(tournamentId)
+			.populate("judges", "name username institution judgeProfile");
+
+		if (!tournament) {
+			return res.status(404).json({ error: "Tournament not found" });
+		}
+
+		res.status(200).json(tournament.judges);
+	} catch (error) {
+		res.status(500).json({ error: error.message });
+		console.log("Error in getJudgesForTournament: ", error.message);
+	}
+};
+
+// Get judge conflicts for a tournament
+const getJudgeConflicts = async (req, res) => {
+	try {
+		const { tournamentId } = req.params;
+
+		const tournament = await Tournament.findById(tournamentId)
+			.populate("judges", "name username institution judgeProfile");
+
+		if (!tournament) {
+			return res.status(404).json({ error: "Tournament not found" });
+		}
+
+		// Get all teams in the tournament (we'll need Team model for this)
+		// For now, return judges with their conflict institutions
+		const judgeConflicts = tournament.judges.map(judge => ({
+			judgeId: judge._id,
+			judgeName: judge.name,
+			judgeInstitution: judge.institution,
+			conflictInstitutions: judge.judgeProfile?.conflictInstitutions || []
+		}));
+
+		res.status(200).json(judgeConflicts);
+	} catch (error) {
+		res.status(500).json({ error: error.message });
+		console.log("Error in getJudgeConflicts: ", error.message);
+	}
+};
+
+// Get rounds for a tournament
+const getRounds = async (req, res) => {
+	try {
+		const { tournamentId } = req.params;
+
+		const rounds = await Round.find({ tournament: tournamentId }).sort({ roundNumber: 1 });
+		
+		res.status(200).json(rounds);
+	} catch (error) {
+		res.status(500).json({ error: error.message });
+		console.log("Error in getRounds: ", error.message);
+	}
+};
+
+// Generate draw for a round
+const generateDraw = async (req, res) => {
+	try {
+		const { roundId } = req.params;
+		const userId = req.user._id;
+
+		// Get round and tournament
+		const round = await Round.findById(roundId);
+		if (!round) {
+			return res.status(404).json({ error: "Round not found" });
+		}
+
+		const tournament = await Tournament.findById(round.tournament);
+		if (!tournament) {
+			return res.status(404).json({ error: "Tournament not found" });
+		}
+
+		// Check if user is tournament creator
+		if (tournament.creator.toString() !== userId.toString()) {
+			return res.status(403).json({ error: "Only tournament creator can generate draw" });
+		}
+
+		// Check if round is in correct status
+		if (round.status !== "scheduled") {
+			return res.status(400).json({ error: "Can only generate draw for scheduled rounds" });
+		}
+
+		// Generate draw
+		const rooms = await generateCompleteDraw(
+			tournament._id,
+			round._id,
+			round.roundNumber,
+			tournament.format
+		);
+
+		// Update round status
+		round.status = "in-progress";
+		await round.save();
+
+		res.status(200).json({
+			message: "Draw generated successfully",
+			rooms,
+			roundNumber: round.roundNumber
+		});
+	} catch (error) {
+		res.status(500).json({ error: error.message });
+		console.log("Error in generateDraw: ", error.message);
+	}
+};
+
+// Get draw for a round
+const getDraw = async (req, res) => {
+	try {
+		const { roundId } = req.params;
+
+		const rooms = await DebateRoom.find({ round: roundId })
+			.populate("teams.team", "name institution captain members")
+			.populate("judges", "name institution judgeProfile")
+			.populate("chair", "name institution judgeProfile")
+			.sort({ roomName: 1 });
+
+		res.status(200).json(rooms);
+	} catch (error) {
+		res.status(500).json({ error: error.message });
+		console.log("Error in getDraw: ", error.message);
+	}
+};
+
+// Delete draw (regenerate)
+const deleteDraw = async (req, res) => {
+	try {
+		const { roundId } = req.params;
+		const userId = req.user._id;
+
+		// Get round and tournament
+		const round = await Round.findById(roundId);
+		if (!round) {
+			return res.status(404).json({ error: "Round not found" });
+		}
+
+		const tournament = await Tournament.findById(round.tournament);
+		if (!tournament) {
+			return res.status(404).json({ error: "Tournament not found" });
+		}
+
+		// Check if user is tournament creator
+		if (tournament.creator.toString() !== userId.toString()) {
+			return res.status(403).json({ error: "Only tournament creator can delete draw" });
+		}
+
+		// Delete all rooms for this round
+		await DebateRoom.deleteMany({ round: roundId });
+
+		// Reset round status
+		round.status = "scheduled";
+		await round.save();
+
+		res.status(200).json({ message: "Draw deleted successfully" });
+	} catch (error) {
+		res.status(500).json({ error: error.message });
+		console.log("Error in deleteDraw: ", error.message);
+	}
+};
+
 export {
 	createTournament,
 	getTournaments,
@@ -269,4 +548,12 @@ export {
 	getMyTournaments,
 	getJoinedTournaments,
 	updateTournamentStatus,
+	addJudgeToTournament,
+	removeJudgeFromTournament,
+	getJudgesForTournament,
+	getJudgeConflicts,
+	getRounds,
+	generateDraw,
+	getDraw,
+	deleteDraw,
 };

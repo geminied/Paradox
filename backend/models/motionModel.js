@@ -24,6 +24,11 @@ const motionSchema = new mongoose.Schema(
 			type: String,
 			default: "",
 		},
+		motionType: {
+			type: String,
+			enum: ["open", "closed", "semi-closed"],
+			default: "open",
+		},
 		// Motion release control
 		isReleased: {
 			type: Boolean,

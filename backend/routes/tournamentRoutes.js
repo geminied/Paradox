@@ -8,6 +8,14 @@ import {
 	getMyTournaments,
 	getJoinedTournaments,
 	updateTournamentStatus,
+	addJudgeToTournament,
+	removeJudgeFromTournament,
+	getJudgesForTournament,
+	getJudgeConflicts,
+	getRounds,
+	generateDraw,
+	getDraw,
+	deleteDraw,
 } from "../controllers/tournamentController.js";
 import protectRoute from "../middlewares/protectRoute.js";
 
@@ -26,5 +34,19 @@ router.get("/:id", getTournament);
 router.put("/:id", protectRoute, updateTournament);
 router.delete("/:id", protectRoute, deleteTournament);
 router.patch("/:id/status", protectRoute, updateTournamentStatus);
+
+// Judge management routes
+router.post("/:tournamentId/judges", protectRoute, addJudgeToTournament);
+router.delete("/:tournamentId/judges/:judgeId", protectRoute, removeJudgeFromTournament);
+router.get("/:tournamentId/judges", getJudgesForTournament);
+router.get("/:tournamentId/judges/conflicts", getJudgeConflicts);
+
+// Round routes
+router.get("/:tournamentId/rounds", getRounds);
+
+// Draw routes
+router.post("/rounds/:roundId/generate-draw", protectRoute, generateDraw);
+router.get("/rounds/:roundId/draw", getDraw);
+router.delete("/rounds/:roundId/draw", protectRoute, deleteDraw);
 
 export default router;

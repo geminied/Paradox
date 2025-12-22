@@ -15,7 +15,7 @@ import { useRecoilValue } from "recoil";
 import userAtom from "../atoms/userAtom";
 import useShowToast from "../hooks/useShowToast";
 import MotionCard from "./MotionCard";
-import AddMotionModal from "./AddMotionModal";
+import CreateMotionModal from "./CreateMotionModal";
 
 const MotionList = ({ tournament }) => {
 	const user = useRecoilValue(userAtom);
@@ -157,11 +157,11 @@ const MotionList = ({ tournament }) => {
 			)}
 
 			{/* Add Motion Modal */}
-			<AddMotionModal
+			<CreateMotionModal
 				isOpen={isOpen}
 				onClose={onClose}
 				tournament={tournament}
-				onMotionAdded={handleMotionAdded}
+				onMotionCreated={handleMotionAdded}
 			/>
 		</Box>
 	);

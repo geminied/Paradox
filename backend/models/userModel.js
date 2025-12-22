@@ -25,6 +25,33 @@ const userSchema = mongoose.Schema(
 			type: String,
 			default: "",
 		},
+		institution: {
+			type: String,
+			default: "",
+		},
+		debatingExperience: {
+			tournaments: { type: Number, default: 0 },
+			wins: { type: Number, default: 0 },
+			speakerAwards: { type: Number, default: 0 },
+		},
+		preferredFormats: [
+			{
+				type: String,
+				enum: ["BP", "AP"],
+			},
+		],
+		// Judge Profile (self-activated)
+		judgeProfile: {
+			isActive: { type: Boolean, default: false }, // User can toggle on/off
+			experience: {
+				type: String,
+				enum: ["novice", "intermediate", "experienced", "senior"],
+				default: "novice",
+			},
+			conflictInstitutions: [String],
+			bio: { type: String, default: "" },
+			availableForTournaments: { type: Boolean, default: true },
+		},
 		followers: [
 			{
 				type: mongoose.Schema.Types.ObjectId,

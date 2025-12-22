@@ -4,6 +4,7 @@ import {
 	createMotion,
 	getTournamentMotions,
 	getReleasedMotions,
+	getMotionsByRound,
 	updateMotion,
 	releaseMotion,
 	scheduleMotionRelease,
@@ -19,6 +20,7 @@ const router = express.Router();
 // Public routes
 router.get("/archive", getArchivedMotions);
 router.get("/tournament/:tournamentId/released", getReleasedMotions);
+router.get("/tournament/:tournamentId/round/:roundNumber", getMotionsByRound);
 
 // Protected routes
 router.post("/tournament/:tournamentId", protectRoute, createMotion);

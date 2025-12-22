@@ -8,6 +8,9 @@ import commentRoutes from "./routes/commentRoutes.js";
 import notificationRoutes from "./routes/notificationRoutes.js";
 import tournamentRoutes from "./routes/tournamentRoutes.js";
 import motionRoutes from "./routes/motionRoutes.js";
+import teamRoutes from "./routes/teamRoutes.js";
+import roundRoutes from "./routes/roundRoutes.js";
+import debateRoomRoutes from "./routes/debateRoomRoutes.js";
 import cors from "cors";
 
 dotenv.config();
@@ -30,5 +33,8 @@ app.use("/api/comments", commentRoutes);
 app.use("/api/notifications", notificationRoutes);
 app.use("/api/tournaments", tournamentRoutes);
 app.use("/api/motions", motionRoutes);
+app.use("/api/teams", teamRoutes);
+app.use("/api/rounds", roundRoutes);
+app.use("/api/debate-rooms", debateRoomRoutes);
 
 app.listen(PORT, () => console.log(`Server started at http://localhost:${PORT}`));

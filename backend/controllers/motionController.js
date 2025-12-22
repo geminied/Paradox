@@ -353,6 +353,40 @@ export const checkScheduledReleases = async (req, res) => {
 	}
 };
 
+// Get motions for a specific round
+export const getMotionsByRound = async (req, res) => {
+	try {
+		const { tournamentId, roundNumber } = req.params;
+		const userId = req.user?._id;
+
+		const tournament = await Tournament.findById(tournamentId);
+		if (!tournament) {
+			return res.status(404).json({ error: "Tournament not found" });
+		}
+
+		// Check if user is organizer
+		const isOrganizer = userId && tournament.creator.toString() === userId.toString();
+
+		let query = { 
+			tournament: tournamentId, 
+			round: parseInt(roundNumber) 
+		};
+
+		// Non-organizers can only see released motions
+		if (!isOrganizer) {
+			query.isReleased = true;
+		}
+
+		const motions = await Motion.find(query)
+			.populate("createdBy", "username name");
+
+		res.status(200).json(motions);
+	} catch (error) {
+		console.error("Error in getMotionsByRound:", error.message);
+		res.status(500).json({ error: error.message });
+	}
+};
+
 // Update break threshold for tournament
 export const updateBreakThreshold = async (req, res) => {
 	try {

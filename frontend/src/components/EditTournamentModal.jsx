@@ -32,6 +32,7 @@ const EditTournamentModal = ({ isOpen, onClose, tournament, onTournamentUpdated 
 		category: "open",
 		startDate: "",
 		endDate: "",
+		registrationDeadline: "",
 		maxTeams: 32,
 		numberOfRounds: 5,
 	});
@@ -51,6 +52,7 @@ const EditTournamentModal = ({ isOpen, onClose, tournament, onTournamentUpdated 
 				category: tournament.category || "open",
 				startDate: tournament.startDate ? tournament.startDate.split("T")[0] : "",
 				endDate: tournament.endDate ? tournament.endDate.split("T")[0] : "",
+				registrationDeadline: tournament.registrationDeadline ? tournament.registrationDeadline.split("T")[0] : "",
 				maxTeams: tournament.maxTeams || 32,
 				numberOfRounds: tournament.numberOfRounds || 5,
 			});
@@ -192,7 +194,7 @@ const EditTournamentModal = ({ isOpen, onClose, tournament, onTournamentUpdated 
 								{/* Date row */}
 								<HStack spacing={3} w="full">
 									<VStack align="start" spacing={1} flex={1}>
-										<Text fontSize="xs" color={mutedText}>Start</Text>
+										<Text fontSize="xs" color={mutedText}>Start Date</Text>
 										<Input
 											name="startDate"
 											type="date"
@@ -205,7 +207,7 @@ const EditTournamentModal = ({ isOpen, onClose, tournament, onTournamentUpdated 
 										/>
 									</VStack>
 									<VStack align="start" spacing={1} flex={1}>
-										<Text fontSize="xs" color={mutedText}>End</Text>
+										<Text fontSize="xs" color={mutedText}>End Date</Text>
 										<Input
 											name="endDate"
 											type="date"
@@ -218,6 +220,22 @@ const EditTournamentModal = ({ isOpen, onClose, tournament, onTournamentUpdated 
 										/>
 									</VStack>
 								</HStack>
+
+								{/* Registration Deadline */}
+								<VStack align="start" spacing={1} w="full">
+									<Text fontSize="xs" color={mutedText}>Registration Deadline (Optional)</Text>
+									<Input
+										name="registrationDeadline"
+										type="date"
+										value={formData.registrationDeadline}
+										onChange={handleChange}
+										placeholder="Defaults to start date"
+										size="sm"
+										borderRadius="lg"
+										borderColor={borderColor}
+										color={textColor}
+									/>
+								</VStack>
 
 								{/* Settings row */}
 								<HStack spacing={3} w="full">

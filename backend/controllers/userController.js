@@ -307,4 +307,103 @@ const getSuggestedUsers = async (req, res) => {
 	}
 };
 
-export { signupUser, loginUser, logoutUser, updateUser, getUserProfile, followUnfollowUser, getFollowingFeed, getSuggestedUsers, toggleBookmark, getBookmarkedDebates };
+// Update judge profile
+const updateJudgeProfile = async (req, res) => {
+	try {
+		const userId = req.user._id;
+		const { isActive, experience, conflictInstitutions, bio, availableForTournaments } = req.body;
+
+		const user = await User.findById(userId);
+		if (!user) {
+			return res.status(404).json({ error: "User not found" });
+		}
+
+		// Update judge profile fields
+		if (isActive !== undefined) user.judgeProfile.isActive = isActive;
+		if (experience) user.judgeProfile.experience = experience;
+		if (conflictInstitutions !== undefined) user.judgeProfile.conflictInstitutions = conflictInstitutions;
+		if (bio !== undefined) user.judgeProfile.bio = bio;
+		if (availableForTournaments !== undefined) user.judgeProfile.availableForTournaments = availableForTournaments;
+
+		await user.save();
+
+		// Return updated user without password
+		const updatedUser = await User.findById(userId).select("-password");
+		res.status(200).json(updatedUser);
+	} catch (err) {
+		res.status(500).json({ error: err.message });
+		console.log("Error in updateJudgeProfile: ", err.message);
+	}
+};
+
+// Get all available judges (users with active judge profiles)
+const getAvailableJudges = async (req, res) => {
+	try {
+		const { experience, institution, format } = req.query;
+
+		let filter = { "judgeProfile.isActive": true, "judgeProfile.availableForTournaments": true };
+
+		if (experience) {
+			filter["judgeProfile.experience"] = experience;
+		}
+		if (institution) {
+			filter["institution"] = institution;
+		}
+		if (format) {
+			filter["preferredFormats"] = format;
+		}
+
+		const judges = await User.find(filter)
+			.select("name username institution judgeProfile preferredFormats")
+			.sort({ "judgeProfile.experience": -1, createdAt: -1 });
+
+		res.status(200).json(judges);
+	} catch (err) {
+		res.status(500).json({ error: err.message });
+		console.log("Error in getAvailableJudges: ", err.message);
+	}
+};
+
+// Search judges by name, username, or institution
+const searchJudges = async (req, res) => {
+	try {
+		const { q } = req.query;
+
+		if (!q || q.trim().length === 0) {
+			return res.status(400).json({ error: "Search query is required" });
+		}
+
+		const judges = await User.find({
+			"judgeProfile.isActive": true,
+			"judgeProfile.availableForTournaments": true,
+			$or: [
+				{ name: { $regex: q, $options: "i" } },
+				{ username: { $regex: q, $options: "i" } },
+				{ institution: { $regex: q, $options: "i" } },
+			],
+		})
+			.select("name username institution judgeProfile preferredFormats")
+			.limit(20);
+
+		res.status(200).json(judges);
+	} catch (err) {
+		res.status(500).json({ error: err.message });
+		console.log("Error in searchJudges: ", err.message);
+	}
+};
+
+export { 
+	signupUser, 
+	loginUser, 
+	logoutUser, 
+	updateUser, 
+	getUserProfile, 
+	followUnfollowUser, 
+	getFollowingFeed, 
+	getSuggestedUsers, 
+	toggleBookmark, 
+	getBookmarkedDebates,
+	updateJudgeProfile,
+	getAvailableJudges,
+	searchJudges
+};

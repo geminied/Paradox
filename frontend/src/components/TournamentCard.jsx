@@ -38,7 +38,18 @@ const TournamentCard = ({ tournament }) => {
 		}
 	};
 
-	const timeAgo = formatDistanceToNowStrict(new Date(tournament.createdAt), { addSuffix: false });
+	// Safely handle date formatting
+	let timeAgo = "Just now";
+	try {
+		if (tournament.createdAt) {
+			const createdDate = new Date(tournament.createdAt);
+			if (!isNaN(createdDate.getTime())) {
+				timeAgo = formatDistanceToNowStrict(createdDate, { addSuffix: false });
+			}
+		}
+	} catch (error) {
+		console.error("Error formatting date:", error);
+	}
 
 	const handleClick = () => {
 		navigate(`/tournament/${tournament._id}`);
@@ -104,7 +115,11 @@ const TournamentCard = ({ tournament }) => {
 			<HStack spacing={4} pt={2} color={mutedText} fontSize="sm">
 				<HStack spacing={1}>
 					<FiCalendar size={14} />
-					<Text>{format(new Date(tournament.startDate), "MMM d")}</Text>
+					<Text>
+						{tournament.startDate && !isNaN(new Date(tournament.startDate).getTime())
+							? format(new Date(tournament.startDate), "MMM d")
+							: "TBD"}
+					</Text>
 				</HStack>
 				<HStack spacing={1}>
 					<FiUsers size={14} />

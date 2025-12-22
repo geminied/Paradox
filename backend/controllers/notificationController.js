@@ -135,20 +135,21 @@ const deleteAllNotifications = async (req, res) => {
 };
 
 // Helper function to create a notification (used by other controllers)
-const createNotification = async ({ recipient, sender, type, debate, comment, message }) => {
+const createNotification = async ({ recipient, sender, type, debate, comment, message, link }) => {
 	try {
-		// Don't create notification if sender is the recipient
-		if (recipient.toString() === sender.toString()) {
+		// Don't create notification if sender is the recipient (only if sender exists)
+		if (sender && recipient.toString() === sender.toString()) {
 			return null;
 		}
 
 		const notification = new Notification({
 			recipient,
-			sender,
+			sender: sender || null,
 			type,
 			debate,
 			comment,
 			message,
+			link,
 		});
 
 		await notification.save();
