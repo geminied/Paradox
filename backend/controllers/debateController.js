@@ -2,6 +2,7 @@ import Debate from "../models/debateModel.js";
 import Category from "../models/categoryModel.js";
 import User from "../models/userModel.js";
 import Comment from "../models/commentModel.js";
+import { createNotification } from "./notificationController.js";
 
 // Create a new debate
 const createDebate = async (req, res) => {
@@ -98,6 +99,16 @@ const toggleUpvote = async (req, res) => {
 		} else {
 			// Add upvote
 			debate.upvotes.push(userId);
+
+			// Create notification for debate author
+			const currentUser = await User.findById(userId);
+			await createNotification({
+				recipient: debate.author,
+				sender: userId,
+				type: "upvote",
+				debate: debateId,
+				message: `${currentUser.name} upvoted your debate`,
+			});
 		}
 
 		await debate.save();

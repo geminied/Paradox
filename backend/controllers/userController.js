@@ -3,6 +3,7 @@ import Debate from "../models/debateModel.js";
 import bcrypt from "bcryptjs";
 import generateTokenAndSetCookie from "../utils/helpers/generateTokenAndSetCookie.js";
 import mongoose from "mongoose";
+import { createNotification } from "./notificationController.js";
 
 // Toggle bookmark on a debate
 const toggleBookmark = async (req, res) => {
@@ -232,6 +233,15 @@ const followUnfollowUser = async (req, res) => {
 			// Follow
 			await User.findByIdAndUpdate(currentUserId, { $push: { following: id } });
 			await User.findByIdAndUpdate(id, { $push: { followers: currentUserId } });
+
+			// Create notification for the followed user
+			await createNotification({
+				recipient: id,
+				sender: currentUserId,
+				type: "follow",
+				message: `${currentUser.name} started following you`,
+			});
+
 			res.status(200).json({ message: "Followed successfully", isFollowing: true });
 		}
 	} catch (err) {

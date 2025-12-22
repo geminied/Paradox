@@ -6,6 +6,7 @@ import { Link as RouterLink, useLocation, useNavigate } from "react-router-dom";
 import { FiLogOut, FiBookmark } from "react-icons/fi";
 import useLogout from "../hooks/useLogout";
 import authScreenAtom from "../atoms/authAtom";
+import NotificationDropdown from "./NotificationDropdown";
 
 const Header = ({ activeTab, onTabChange }) => {
 	const user = useRecoilValue(userAtom);
@@ -159,6 +160,7 @@ const Header = ({ activeTab, onTabChange }) => {
 
 					{user && (
 						<HStack spacing={1}>
+							<NotificationDropdown />
 							<Tooltip label="Saved Debates" hasArrow>
 								<IconButton
 									as={RouterLink}

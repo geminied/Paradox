@@ -1,6 +1,7 @@
 import Comment from "../models/commentModel.js";
 import Debate from "../models/debateModel.js";
 import User from "../models/userModel.js";
+import { createNotification } from "./notificationController.js";
 
 // Get comments for a debate (with nested replies)
 const getComments = async (req, res) => {
@@ -107,6 +108,35 @@ const createComment = async (req, res) => {
 			$inc: { commentsCount: 1 },
 		});
 
+		// Get current user for notification message
+		const currentUser = await User.findById(userId);
+
+		// Create notification
+		if (parentCommentId) {
+			// It's a reply - notify the parent comment author
+			const parentComment = await Comment.findById(parentCommentId);
+			if (parentComment) {
+				await createNotification({
+					recipient: parentComment.author,
+					sender: userId,
+					type: "reply",
+					debate: debateId,
+					comment: newComment._id,
+					message: `${currentUser.name} replied to your comment`,
+				});
+			}
+		} else {
+			// It's a direct comment - notify the debate author
+			await createNotification({
+				recipient: debate.author,
+				sender: userId,
+				type: "comment",
+				debate: debateId,
+				comment: newComment._id,
+				message: `${currentUser.name} commented on your debate`,
+			});
+		}
+
 		const populatedComment = await Comment.findById(newComment._id).populate(
 			"author",
 			"name username profilePic"
@@ -150,6 +180,17 @@ const toggleSamePoint = async (req, res) => {
 				(id) => id.toString() !== userId.toString()
 			);
 			comment.samePointReactions.push(userId);
+
+			// Create notification for the comment author
+			const currentUser = await User.findById(userId);
+			await createNotification({
+				recipient: comment.author,
+				sender: userId,
+				type: "reaction",
+				debate: comment.debate,
+				comment: commentId,
+				message: `${currentUser.name} reacted "Same point" to your comment`,
+			});
 		}
 
 		await comment.save();
@@ -192,6 +233,17 @@ const toggleGoodPoint = async (req, res) => {
 				(id) => id.toString() !== userId.toString()
 			);
 			comment.goodPointReactions.push(userId);
+
+			// Create notification for the comment author
+			const currentUser = await User.findById(userId);
+			await createNotification({
+				recipient: comment.author,
+				sender: userId,
+				type: "reaction",
+				debate: comment.debate,
+				comment: commentId,
+				message: `${currentUser.name} reacted "Good point" to your comment`,
+			});
 		}
 
 		await comment.save();
