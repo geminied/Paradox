@@ -6,6 +6,8 @@ import userRoutes from "./routes/userRoutes.js";
 import debateRoutes from "./routes/debateRoutes.js";
 import commentRoutes from "./routes/commentRoutes.js";
 import notificationRoutes from "./routes/notificationRoutes.js";
+import tournamentRoutes from "./routes/tournamentRoutes.js";
+import motionRoutes from "./routes/motionRoutes.js";
 import cors from "cors";
 
 dotenv.config();
@@ -26,5 +28,7 @@ app.use("/api/users", userRoutes);
 app.use("/api/debates", debateRoutes);
 app.use("/api/comments", commentRoutes);
 app.use("/api/notifications", notificationRoutes);
+app.use("/api/tournaments", tournamentRoutes);
+app.use("/api/motions", motionRoutes);
 
 app.listen(PORT, () => console.log(`Server started at http://localhost:${PORT}`));

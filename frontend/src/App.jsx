@@ -6,6 +6,8 @@ import LeftSidebar from "./components/LeftSidebar";
 import HomePage from "./pages/HomePage";
 import AuthPage from "./pages/AuthPage";
 import CompetitionsPage from "./pages/CompetitionsPage";
+import TournamentDetailPage from "./pages/TournamentDetailPage";
+import MotionArchivePage from "./pages/MotionArchivePage";
 import DebateDetailPage from "./pages/DebateDetailPage";
 import SavedDebatesPage from "./pages/SavedDebatesPage";
 import { useRecoilValue } from "recoil";
@@ -66,6 +68,8 @@ function App() {
 					<Route path='/auth' element={!user ? <AuthPage /> : <Navigate to='/' />} />
 					<Route path='/update' element={user ? <UpdateProfilePage /> : <Navigate to='/auth' />} />
 					<Route path='/competitions' element={user ? <CompetitionsPage /> : <Navigate to='/auth' />} />
+					<Route path='/tournament/:tournamentId' element={user ? <TournamentDetailPage /> : <Navigate to='/auth' />} />
+					<Route path='/motions/archive' element={<MotionArchivePage />} />
 					<Route path='/saved' element={user ? <SavedDebatesPage /> : <Navigate to='/auth' />} />
 					<Route path='/debate/:debateId' element={user ? <DebateDetailPage /> : <Navigate to='/auth' />} />
 					<Route path='/:username' element={<UserPage />} />
