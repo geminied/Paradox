@@ -7,6 +7,7 @@ import {
 	HStack,
 	Badge,
 	Spinner,
+	Avatar,
 	useColorModeValue,
 	Divider,
 } from "@chakra-ui/react";
@@ -230,25 +231,36 @@ const DebateRoomPage = () => {
 
 	if (!debate) {
 		return (
-			<Box maxW="800px" mx="auto" py={8} px={4}>
-				<Text>Debate room not found</Text>
+			<Box py={6}>
+				<Text color={mutedText} textAlign="center">Debate room not found</Text>
 			</Box>
 		);
 	}
 
 	return (
-		<Box maxW="1200px" mx="auto" py={8} px={4}>
-			{/* Header */}
-			<HStack mb={6}>
-				<Button
-					variant="ghost"
-					leftIcon={<FiArrowLeft />}
-					onClick={() => navigate(`/tournament/${debate.tournament._id}/rounds`)}
-					size="sm"
-				>
-					Back
-				</Button>
+		<Box py={6}>
+			{/* Back Button */}
+			<HStack
+				mb={4}
+				cursor="pointer"
+				onClick={() => navigate(`/tournament/${debate.tournament._id}/rounds`)}
+				_hover={{ color: textColor }}
+				color={mutedText}
+				transition="all 0.2s"
+			>
+				<FiArrowLeft size={18} />
+				<Text fontSize="sm">Back to Rounds</Text>
 			</HStack>
+
+			{/* Page Header */}
+			<Box mb={6}>
+				<Text fontSize="2xl" fontWeight="bold" color={textColor} mb={1}>
+					{debate.roomName}
+				</Text>
+				<Text fontSize="sm" color={mutedText}>
+					{debate.tournament.name} - Round {debate.round.roundNumber}
+				</Text>
+			</Box>
 
 			<VStack align="stretch" spacing={6}>
 				{/* Debate Info Card */}
@@ -256,20 +268,20 @@ const DebateRoomPage = () => {
 					bg={cardBg}
 					border="1px"
 					borderColor={borderColor}
-					borderRadius="3xl"
-					p={6}
+					borderRadius="2xl"
+					p={5}
 				>
-					<VStack align="stretch" spacing={4}>
+					<VStack align="stretch" spacing={5}>
 						<HStack justify="space-between">
-							<VStack align="start" spacing={0}>
-								<Text fontSize="2xl" fontWeight="bold" color={textColor}>
-									{debate.roomName}
-								</Text>
-								<Text fontSize="sm" color={mutedText}>
-									{debate.tournament.name} - Round {debate.round.roundNumber}
-								</Text>
-							</VStack>
-							<Badge colorScheme={getStatusColor(debate.status)} variant="subtle" borderRadius="full" px={3}>
+							<Badge 
+								colorScheme={getStatusColor(debate.status)} 
+								variant="subtle" 
+								borderRadius="full" 
+								px={3}
+								py={1}
+								fontSize="sm"
+								fontWeight="medium"
+							>
 								{debate.status}
 							</Badge>
 						</HStack>
@@ -278,13 +290,13 @@ const DebateRoomPage = () => {
 						{debate.round?.motion && debate.round.motion.isReleased && (
 							<Box
 								p={4}
-								borderRadius="lg"
+								borderRadius="xl"
 								bg={motionBg}
 								border="1px"
 								borderColor={motionBorderColor}
 							>
-								<VStack align="start" spacing={2}>
-									<Badge colorScheme="blue" variant="solid" borderRadius="full" fontSize="xs">
+								<VStack align="start" spacing={3}>
+									<Badge colorScheme="blue" variant="solid" borderRadius="full" fontSize="xs" px={2}>
 										MOTION
 									</Badge>
 									<Text fontSize="lg" fontWeight="bold" color={textColor}>
@@ -295,7 +307,7 @@ const DebateRoomPage = () => {
 											mt={2}
 											p={3}
 											bg={infoSlideBg}
-											borderRadius="md"
+											borderRadius="lg"
 											w="100%"
 										>
 											<Text fontSize="xs" fontWeight="semibold" color={mutedText} mb={1}>
@@ -306,11 +318,9 @@ const DebateRoomPage = () => {
 											</Text>
 										</Box>
 									)}
-									<HStack spacing={4} mt={1}>
-										<Text fontSize="xs" color={mutedText}>
-											Prep Time: {debate.round.motion.prepTime} minutes
-										</Text>
-									</HStack>
+								<Text fontSize="xs" color={mutedText} mt={2}>
+									Prep Time: {debate.round.motion.prepTime} minutes
+								</Text>
 								</VStack>
 							</Box>
 						)}
@@ -319,41 +329,79 @@ const DebateRoomPage = () => {
 
 						{/* Teams */}
 						<Box>
-							<Text fontWeight="semibold" fontSize="sm" color={textColor} mb={2}>
-								Teams
+							<Text fontWeight="semibold" fontSize="xs" color={mutedText} mb={3}>
+								Teams:
 							</Text>
-							<VStack spacing={2} align="stretch">
+							<VStack spacing={3} align="stretch">
 								{debate.teams.map((teamInfo) => (
 									<Box
 										key={teamInfo.team._id}
-										p={3}
-										borderRadius="lg"
+										p={4}
+										borderRadius="xl"
 										bg={teamBg}
+										border="1px"
+										borderColor={borderColor}
 									>
-										<HStack spacing={2} mb={2}>
-											<Badge colorScheme="blue" variant="solid" borderRadius="full">
-												{teamInfo.position}
-											</Badge>
-											<Text fontSize="sm" fontWeight="semibold" color={textColor}>
-												{teamInfo.team.name}
-											</Text>
-										</HStack>
-										<Text fontSize="xs" color={mutedText} mb={1}>
-											{teamInfo.team.institution}
-										</Text>
+										<Flex justify="space-between" align="start" mb={3}>
+											<HStack spacing={3}>
+												<Badge 
+													colorScheme="blue" 
+													variant="solid" 
+													borderRadius="md"
+													px={2}
+													py={1}
+													fontSize="10px"
+													fontWeight="bold"
+													textTransform="uppercase"
+												>
+													{teamInfo.position}
+												</Badge>
+												<VStack align="start" spacing={0}>
+													<Text fontSize="md" fontWeight="bold" color={textColor}>
+														{teamInfo.team.name}
+													</Text>
+													<Text fontSize="xs" color={mutedText} fontWeight="medium">
+														{teamInfo.team.institution}
+													</Text>
+												</VStack>
+											</HStack>
+										</Flex>
 										{teamInfo.team.members && teamInfo.team.members.length > 0 && (
-											<VStack align="start" spacing={1} mt={2}>
-												{teamInfo.team.members.map((member, idx) => (
-													<HStack key={member._id} spacing={2}>
-														<Badge size="sm" colorScheme="gray" variant="subtle" borderRadius="full">
-															Speaker {idx + 1}
-														</Badge>
-														<Text fontSize="xs" color={textColor}>
-															{member.name}
-														</Text>
-													</HStack>
-												))}
-											</VStack>
+											<Box>
+												<Text fontSize="xs" color={mutedText} mb={2} fontWeight="semibold">
+													Members:
+												</Text>
+												<VStack align="stretch" spacing={2}>
+													{teamInfo.team.members.map((member, idx) => (
+														<HStack key={member._id} spacing={3} p={2} borderRadius="lg">
+															<Avatar
+																size="sm"
+																name={member.name || member.username}
+																src={member.profilePic}
+															/>
+															<VStack align="start" spacing={0} flex={1}>
+																<HStack spacing={2}>
+																	<Text fontSize="sm" fontWeight="semibold" color={textColor}>
+																		{member.name}
+																	</Text>
+																	<Badge 
+																		size="sm" 
+																		colorScheme="gray" 
+																		variant="subtle" 
+																		borderRadius="full"
+																		fontSize="xs"
+																	>
+																		Speaker {idx + 1}
+																	</Badge>
+																</HStack>
+																<Text fontSize="xs" color={mutedText}>
+																	@{member.username}
+																</Text>
+															</VStack>
+														</HStack>
+													))}
+												</VStack>
+											</Box>
 										)}
 									</Box>
 								))}
@@ -363,22 +411,48 @@ const DebateRoomPage = () => {
 						{/* Judges */}
 						{debate.judges && debate.judges.length > 0 && (
 							<Box>
-								<Text fontWeight="semibold" fontSize="sm" color={textColor} mb={2}>
-									Judges
+								<Text fontWeight="semibold" fontSize="xs" color={mutedText} mb={3}>
+									Judges:
 								</Text>
-								<HStack spacing={2} flexWrap="wrap">
+								<VStack align="stretch" spacing={2}>
 									{debate.judges.map((judge) => (
-										<Badge
+										<HStack
 											key={judge._id}
-											variant="outline"
-											borderRadius="full"
-											colorScheme={judge._id === debate.chair?._id ? "purple" : "gray"}
+											spacing={3}
+											p={2}
+											borderRadius="lg"
 										>
-											{judge.name}
-											{judge._id === debate.chair?._id && " (Chair)"}
-										</Badge>
+											<Avatar
+												size="sm"
+												name={judge.name}
+												src={judge.profilePic}
+											/>
+											<VStack align="start" spacing={0} flex={1}>
+												<HStack spacing={2}>
+													<Text fontSize="sm" fontWeight="semibold" color={textColor}>
+														{judge.name}
+													</Text>
+													{judge._id === debate.chair?._id && (
+														<Badge
+															colorScheme="purple"
+															variant="solid"
+															fontSize="xs"
+															borderRadius="md"
+															px={2}
+														>
+															CHAIR
+														</Badge>
+													)}
+												</HStack>
+												{judge.institution && (
+													<Text fontSize="xs" color={mutedText}>
+														{judge.institution}
+													</Text>
+												)}
+											</VStack>
+										</HStack>
 									))}
-								</HStack>
+								</VStack>
 							</Box>
 						)}
 					</VStack>
@@ -395,8 +469,8 @@ const DebateRoomPage = () => {
 						bg={cardBg}
 						border="2px"
 						borderColor="blue.400"
-						borderRadius="3xl"
-						p={4}
+						borderRadius="2xl"
+						p={5}
 					>
 						<VStack spacing={2}>
 							<Badge colorScheme="blue" variant="solid" borderRadius="full" fontSize="sm" px={3}>
@@ -433,8 +507,8 @@ const DebateRoomPage = () => {
 						bg={cardBg}
 						border="1px"
 						borderColor={borderColor}
-						borderRadius="3xl"
-						p={4}
+						borderRadius="2xl"
+						p={5}
 					>
 						<VStack spacing={3}>
 							{ballotStatus && (
@@ -485,7 +559,7 @@ const DebateRoomPage = () => {
 						bg={cardBg}
 						border="1px"
 						borderColor={borderColor}
-						borderRadius="3xl"
+						borderRadius="2xl"
 						p={4}
 					>
 						<HStack spacing={3}>

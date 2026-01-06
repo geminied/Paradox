@@ -43,6 +43,8 @@ import {
 	FiCheckCircle,
 	FiXCircle,
 	FiTrendingUp,
+	FiAward,
+	FiArchive,
 } from "react-icons/fi";
 import { format, formatDistanceToNowStrict } from "date-fns";
 import useShowToast from "../hooks/useShowToast";
@@ -52,6 +54,7 @@ import RegisterTeamModal from "../components/RegisterTeamModal";
 import TeamCard from "../components/TeamCard";
 import JudgeAssignmentModal from "../components/JudgeAssignmentModal";
 import StandingsPage from "./StandingsPage";
+import BreakPage from "./BreakPage";
 
 const TournamentDetailPage = () => {
 	const { tournamentId } = useParams();
@@ -162,6 +165,27 @@ const TournamentDetailPage = () => {
 			showToast("Error", error.message, "error");
 		} finally {
 			setIsUpdatingStatus(false);
+		}
+	};
+
+	const handleArchive = async () => {
+		try {
+			const endpoint = tournament.isArchived ? "unarchive" : "archive";
+			const res = await fetch(`/api/tournaments/${tournamentId}/${endpoint}`, {
+				method: "POST",
+			});
+			const data = await res.json();
+			if (!res.ok) throw new Error(data.error);
+
+			setTournament(data.tournament);
+			showToast("Success", data.message, "success");
+			
+			// Optionally navigate to competitions page after archiving
+			if (!tournament.isArchived) {
+				navigate("/competitions");
+			}
+		} catch (error) {
+			showToast("Error", error.message, "error");
 		}
 	};
 
@@ -285,6 +309,26 @@ const TournamentDetailPage = () => {
 										isDisabled={isUpdatingStatus}
 									>
 										Complete
+									</MenuItem>
+								)}
+								{tournament.status === "completed" && !tournament.isArchived && (
+									<MenuItem 
+										icon={<FiArchive />} 
+										onClick={handleArchive}
+										bg={cardBg}
+										_hover={{ bg: hoverBg }}
+									>
+										Archive Tournament
+									</MenuItem>
+								)}
+								{tournament.isArchived && (
+									<MenuItem 
+										icon={<FiArchive />} 
+										onClick={handleArchive}
+										bg={cardBg}
+										_hover={{ bg: hoverBg }}
+									>
+										Unarchive Tournament
 									</MenuItem>
 								)}
 								{!["completed", "cancelled"].includes(tournament.status) && (
@@ -433,6 +477,12 @@ const TournamentDetailPage = () => {
 						<Text>Standings</Text>
 					</HStack>
 				</Tab>
+				<Tab>
+					<HStack spacing={2}>
+						<FiAward />
+						<Text>Break</Text>
+					</HStack>
+				</Tab>
 			</TabList>
 
 			<TabPanels>
@@ -495,6 +545,15 @@ const TournamentDetailPage = () => {
 				{/* Standings Tab */}
 				<TabPanel p={0}>
 					<StandingsPage tournamentId={tournamentId} />
+				</TabPanel>
+
+				{/* Break Tab */}
+				<TabPanel p={0}>
+					<BreakPage 
+						tournamentId={tournamentId} 
+						tournament={tournament}
+						isOrganizer={isCreator}
+					/>
 				</TabPanel>
 			</TabPanels>
 		</Tabs>

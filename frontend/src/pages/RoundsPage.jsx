@@ -8,18 +8,12 @@ import {
 	Badge,
 	Spinner,
 	useColorModeValue,
-	useDisclosure,
-	Tabs,
-	TabList,
-	Tab,
-	TabPanels,
-	TabPanel,
 } from "@chakra-ui/react";
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useRecoilValue } from "recoil";
 import userAtom from "../atoms/userAtom";
-import { FiArrowLeft, FiTarget } from "react-icons/fi";
+import { FiArrowLeft } from "react-icons/fi";
 import useShowToast from "../hooks/useShowToast";
 import DrawDisplay from "../components/DrawDisplay";
 
@@ -38,7 +32,9 @@ const RoundsPage = () => {
 	const borderColor = useColorModeValue("gray.200", "#333333");
 	const textColor = useColorModeValue("gray.900", "white");
 	const mutedText = useColorModeValue("gray.500", "#888888");
-	const hoverBg = useColorModeValue("gray.50", "#1a1a1a");
+	const pillBg = useColorModeValue("gray.100", "rgba(255,255,255,0.06)");
+	const pillHoverBg = useColorModeValue("gray.200", "rgba(255,255,255,0.1)");
+	const pillActiveBg = useColorModeValue("purple.100", "rgba(128,90,213,0.2)");
 
 	const isOrganizer = user && tournament?.creator?._id === user._id;
 
@@ -95,175 +91,192 @@ const RoundsPage = () => {
 	}
 
 	return (
-		<Box maxW="1200px" mx="auto" py={8} px={4}>
-			{/* Header */}
-			<HStack mb={6}>
-				<Button
-					variant="ghost"
-					leftIcon={<FiArrowLeft />}
-					onClick={() => navigate(`/tournament/${tournamentId}`)}
-					size="sm"
-				>
-					Back
-				</Button>
+		<Box py={6}>
+			{/* Back Button */}
+			<HStack
+				mb={4}
+				cursor="pointer"
+				onClick={() => navigate(`/tournament/${tournamentId}`)}
+				_hover={{ color: textColor }}
+				color={mutedText}
+				transition="all 0.2s"
+			>
+				<FiArrowLeft size={18} />
+				<Text fontSize="sm">Back to Tournament</Text>
 			</HStack>
 
-			<VStack align="stretch" spacing={6}>
-				{/* Tournament Info */}
-				<Box>
-					<Text fontSize="2xl" fontWeight="bold" color={textColor} mb={1}>
-						{tournament?.name}
-					</Text>
-					<Text fontSize="sm" color={mutedText}>
-						Round Management
-					</Text>
-				</Box>
+			{/* Tournament Header */}
+			<Box mb={6}>
+				<Text fontSize="2xl" fontWeight="bold" color={textColor} mb={1}>
+					{tournament?.name}
+				</Text>
+				<Text fontSize="sm" color={mutedText}>
+					Round Management
+				</Text>
+			</Box>
 
-				{/* Rounds Tabs */}
+			{/* Round Filter Pills */}
+			{rounds.length === 0 ? (
 				<Box
 					bg={cardBg}
 					border="1px"
 					borderColor={borderColor}
-					borderRadius="3xl"
-					p={6}
+					borderRadius="2xl"
+					p={8}
 				>
-					{rounds.length === 0 ? (
-						<Text color={mutedText} textAlign="center" py={8}>
-							No rounds created yet
-						</Text>
-					) : (
-						<Tabs
-							index={selectedRound ? selectedRound - 1 : 0}
-							onChange={(index) => setSelectedRound(index + 1)}
-							variant="soft-rounded"
-							colorScheme="blue"
-						>
-							<TabList mb={6} flexWrap="wrap">
-								{rounds.map((round) => (
-									<Tab key={round._id}>
-										<VStack spacing={0}>
-											<Text>Round {round.roundNumber}</Text>
-											<Badge
-												colorScheme={getRoundStatusColor(round.status)}
-												variant="subtle"
-												fontSize="xs"
-												borderRadius="full"
-											>
-												{round.status}
-											</Badge>
-										</VStack>
-									</Tab>
-								))}
-							</TabList>
+					<Text color={mutedText} textAlign="center">
+						No rounds created yet
+					</Text>
+				</Box>
+			) : (
+				<>
+					{/* Filter Pills */}
+					<HStack spacing={2} mb={6} flexWrap="wrap">
+						{rounds.map((round) => (
+							<Box
+								key={round._id}
+								px={4}
+								py={2}
+								borderRadius="full"
+								fontSize="sm"
+								fontWeight="medium"
+								cursor="pointer"
+								transition="all 0.15s"
+								bg={selectedRound === round.roundNumber ? pillActiveBg : pillBg}
+								color={selectedRound === round.roundNumber ? "purple.500" : textColor}
+								_hover={{ bg: selectedRound === round.roundNumber ? pillActiveBg : pillHoverBg }}
+								onClick={() => setSelectedRound(round.roundNumber)}
+							>
+								<HStack spacing={2}>
+									<Text>Round {round.roundNumber}</Text>
+									<Badge
+										colorScheme={getRoundStatusColor(round.status)}
+										variant="subtle"
+										fontSize="xs"
+										borderRadius="full"
+									>
+										{round.status === "scheduled" ? "pending" : round.status}
+									</Badge>
+								</HStack>
+							</Box>
+						))}
+					</HStack>
 
-							<TabPanels>
-								{rounds.map((round) => (
-									<TabPanel key={round._id} px={0}>
-										<VStack align="stretch" spacing={4}>
-											{/* Round Info */}
-											<HStack justify="space-between" flexWrap="wrap">
-												<VStack align="start" spacing={0}>
-													<Text fontWeight="semibold" color={textColor}>
-														Round {round.roundNumber} - {round.roundType}
-													</Text>
-													<Text fontSize="sm" color={mutedText}>
-														{round.completedDebates || 0} / {round.totalDebates || 0} debates completed
-													</Text>
-												</VStack>
-												{round.isDrawReleased && (
-													<Badge colorScheme="green" variant="subtle" borderRadius="full">
-														Draw Released
+					{/* Round Content */}
+					{rounds.filter(r => r.roundNumber === selectedRound).map((round) => (
+						<VStack key={round._id} align="stretch" spacing={6}>
+							{/* Round Info Card */}
+							<Box
+								bg={cardBg}
+								border="1px"
+								borderColor={borderColor}
+								borderRadius="2xl"
+								p={5}
+							>
+								<HStack justify="space-between" flexWrap="wrap" mb={4}>
+									<VStack align="start" spacing={1}>
+										<Text fontSize="lg" fontWeight="bold" color={textColor}>
+											Round {round.roundNumber}
+										</Text>
+										<HStack spacing={3}>
+											<Text fontSize="sm" color={mutedText}>
+												{round.roundType}
+											</Text>
+											<Text fontSize="sm" color={mutedText}>•</Text>
+											<Text fontSize="sm" color={mutedText}>
+												{round.completedDebates || 0} / {round.totalDebates || 0} debates completed
+											</Text>
+										</HStack>
+									</VStack>
+									{round.isDrawReleased && (
+										<Badge colorScheme="green" variant="subtle" borderRadius="full" px={3} py={1}>
+											Draw Released
+										</Badge>
+									)}
+								</HStack>
+
+								{/* Motion Display */}
+								{round.motion && (
+									<Box
+										p={4}
+										borderRadius="xl"
+										bg={useColorModeValue("blue.50", "rgba(66, 153, 225, 0.1)")}
+										border="1px"
+										borderColor={useColorModeValue("blue.200", "rgba(66, 153, 225, 0.3)")}
+									>
+										<VStack align="start" spacing={3}>
+											<HStack>
+												<Badge colorScheme="blue" variant="solid" borderRadius="full" fontSize="xs" px={2}>
+													MOTION
+												</Badge>
+												{round.motion.isReleased ? (
+													<Badge colorScheme="green" variant="subtle" borderRadius="full" fontSize="xs" px={2}>
+														RELEASED
+													</Badge>
+												) : (
+													<Badge colorScheme="orange" variant="subtle" borderRadius="full" fontSize="xs" px={2}>
+														NOT RELEASED
 													</Badge>
 												)}
 											</HStack>
-
-											{/* Motion Display */}
-											{round.motion && (
-												<Box
-													p={4}
-													borderRadius="lg"
-													bg={useColorModeValue("blue.50", "rgba(66, 153, 225, 0.1)")}
-													border="1px"
-													borderColor={useColorModeValue("blue.200", "rgba(66, 153, 225, 0.3)")}
-												>
-													<VStack align="start" spacing={2}>
-														<HStack>
-															<Badge colorScheme="blue" variant="solid" borderRadius="full" fontSize="xs">
-																MOTION
-															</Badge>
-															{round.motion.isReleased ? (
-																<Badge colorScheme="green" variant="subtle" borderRadius="full" fontSize="xs">
-																	RELEASED
-																</Badge>
-															) : (
-																<Badge colorScheme="orange" variant="subtle" borderRadius="full" fontSize="xs">
-																	NOT RELEASED
-																</Badge>
-															)}
-														</HStack>
-														{round.motion.isReleased || isOrganizer ? (
-															<>
-																<Text fontSize="md" fontWeight="bold" color={textColor}>
-																	{round.motion.motionText}
-																</Text>
-																{round.motion.infoSlide && (
-																	<Box
-																		mt={2}
-																		p={3}
-																		bg={useColorModeValue("white", "#0a0a0a")}
-																		borderRadius="md"
-																		w="100%"
-																	>
-																		<Text fontSize="xs" fontWeight="semibold" color={mutedText} mb={1}>
-																			Info Slide
-																		</Text>
-																		<Text fontSize="sm" color={textColor}>
-																			{round.motion.infoSlide}
-																		</Text>
-																	</Box>
-																)}
-																<HStack spacing={4} mt={1}>
-																	<Text fontSize="xs" color={mutedText}>
-																		Prep Time: {round.motion.prepTime} minutes
-																	</Text>
-																</HStack>
-															</>
-														) : (
-															<Text fontSize="sm" color={mutedText} fontStyle="italic">
-																Motion will be revealed when released by organizers
-															</Text>
-														)}
-													</VStack>
-												</Box>
-											)}
-											{!round.motion && isOrganizer && (
-												<Box
-													p={4}
-													borderRadius="lg"
-													bg={useColorModeValue("orange.50", "rgba(237, 137, 54, 0.1)")}
-													border="1px"
-													borderColor={useColorModeValue("orange.200", "rgba(237, 137, 54, 0.3)")}
-												>
-													<Text fontSize="sm" color={textColor}>
-														⚠️ No motion created for this round yet
+											{round.motion.isReleased || isOrganizer ? (
+												<>
+													<Text fontSize="md" fontWeight="bold" color={textColor}>
+														{round.motion.motionText}
 													</Text>
-												</Box>
+													{round.motion.infoSlide && (
+														<Box
+															mt={2}
+															p={3}
+															bg={useColorModeValue("white", "#0a0a0a")}
+															borderRadius="lg"
+															w="100%"
+														>
+															<Text fontSize="xs" fontWeight="semibold" color={mutedText} mb={1}>
+																Info Slide
+															</Text>
+															<Text fontSize="sm" color={textColor}>
+																{round.motion.infoSlide}
+															</Text>
+														</Box>
+													)}
+													<Text fontSize="xs" color={mutedText} mt={2}>
+														Prep Time: {round.motion.prepTime} minutes
+													</Text>
+												</>
+											) : (
+												<Text fontSize="sm" color={mutedText} fontStyle="italic">
+													Motion will be revealed when released by organizers
+												</Text>
 											)}
-
-											{/* Draw Display */}
-											<DrawDisplay
-												tournament={tournament}
-												roundNumber={round.roundNumber}
-												isOrganizer={isOrganizer}
-											/>
 										</VStack>
-									</TabPanel>
-								))}
-							</TabPanels>
-						</Tabs>
-					)}
-				</Box>
-			</VStack>
+									</Box>
+								)}
+								{!round.motion && isOrganizer && (
+									<Box
+										p={4}
+										borderRadius="xl"
+										bg={useColorModeValue("orange.50", "rgba(237, 137, 54, 0.1)")}
+										border="1px"
+										borderColor={useColorModeValue("orange.200", "rgba(237, 137, 54, 0.3)")}
+									>
+										<Text fontSize="sm" color={textColor}>
+											⚠️ No motion created for this round yet
+										</Text>
+									</Box>
+								)}
+							</Box>
+
+							{/* Draw Display */}
+							<DrawDisplay
+								tournament={tournament}
+								roundNumber={round.roundNumber}
+								isOrganizer={isOrganizer}
+							/>
+						</VStack>
+					))}
+				</>
+			)}
 		</Box>
 	);
 };

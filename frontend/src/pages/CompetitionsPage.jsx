@@ -40,6 +40,7 @@ const CompetitionsPage = () => {
 		{ label: "Ongoing", value: "ongoing" },
 		{ label: "BP", value: "BP", type: "format" },
 		{ label: "AP", value: "AP", type: "format" },
+		{ label: "Archived", value: "archived", type: "archived" },
 	];
 
 	// Fetch tournaments
@@ -47,7 +48,20 @@ const CompetitionsPage = () => {
 		const fetchTournaments = async () => {
 			setIsLoading(true);
 			try {
-				const res = await fetch("/api/tournaments/feed");
+				// Build query parameters
+				let queryParams = "";
+				if (activeFilter) {
+					const filter = filters.find((f) => f.value === activeFilter);
+					if (filter?.type === "format") {
+						queryParams = `?format=${activeFilter}`;
+					} else if (filter?.type === "archived") {
+						queryParams = `?archived=true`;
+					} else {
+						queryParams = `?status=${activeFilter}`;
+					}
+				}
+
+				const res = await fetch(`/api/tournaments/feed${queryParams}`);
 				const data = await res.json();
 				if (!res.ok) throw new Error(data.error);
 				setTournaments(data);
@@ -59,21 +73,11 @@ const CompetitionsPage = () => {
 		};
 
 		fetchTournaments();
-	}, [showToast]);
+	}, [showToast, activeFilter]);
 
 	const handleTournamentCreated = (newTournament) => {
 		setTournaments((prev) => [newTournament, ...prev]);
 	};
-
-	// Filter tournaments based on active filter
-	const filteredTournaments = tournaments.filter((t) => {
-		if (!activeFilter) return true;
-		const filter = filters.find((f) => f.value === activeFilter);
-		if (filter?.type === "format") {
-			return t.format === activeFilter;
-		}
-		return t.status === activeFilter;
-	});
 
 	return (
 		<Box>
@@ -114,7 +118,7 @@ const CompetitionsPage = () => {
 				<Flex justify="center" py={10}>
 					<Spinner size="lg" />
 				</Flex>
-			) : filteredTournaments.length === 0 ? (
+			) : tournaments.length === 0 ? (
 				<Flex justify="center" align="center" py={10}>
 					<Text color={mutedText}>
 						{activeFilter ? "No tournaments match this filter" : "No tournaments yet. Create the first one!"}
@@ -122,7 +126,7 @@ const CompetitionsPage = () => {
 				</Flex>
 			) : (
 				<VStack spacing={4} align="stretch">
-					{filteredTournaments.map((tournament) => (
+					{tournaments.map((tournament) => (
 						<TournamentCard key={tournament._id} tournament={tournament} />
 					))}
 				</VStack>
