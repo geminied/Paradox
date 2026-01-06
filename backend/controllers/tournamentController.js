@@ -541,7 +541,14 @@ const getDraw = async (req, res) => {
 		const { roundId } = req.params;
 
 		const rooms = await DebateRoom.find({ round: roundId })
-			.populate("teams.team", "name institution captain members")
+			.populate({
+				path: "teams.team",
+				select: "name institution captain members",
+				populate: {
+					path: "members",
+					select: "name username"
+				}
+			})
 			.populate("judges", "name institution judgeProfile")
 			.populate("chair", "name institution judgeProfile")
 			.sort({ roomName: 1 });

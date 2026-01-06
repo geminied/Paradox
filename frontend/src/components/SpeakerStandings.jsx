@@ -95,15 +95,15 @@ const SpeakerStandings = ({ tournamentId }) => {
 			borderRadius="xl"
 			overflow="hidden"
 		>
-			<Table variant="simple">
+			<Table variant="simple" size="md">
 				<Thead bg={headerBg}>
 					<Tr>
-						<Th>Rank</Th>
-						<Th>Speaker</Th>
-						<Th>Team</Th>
-						<Th isNumeric>Avg Score</Th>
-						<Th isNumeric>Total Score</Th>
-						<Th isNumeric>Speeches</Th>
+						<Th fontSize="sm" fontWeight="semibold">Rank</Th>
+						<Th fontSize="sm" fontWeight="semibold">Speaker</Th>
+						<Th fontSize="sm" fontWeight="semibold">Team</Th>
+						<Th isNumeric fontSize="sm" fontWeight="semibold">Avg Score</Th>
+						<Th isNumeric fontSize="sm" fontWeight="semibold">Total Score</Th>
+					<Th textAlign="center" fontSize="sm" fontWeight="semibold">Speeches</Th>
 					</Tr>
 				</Thead>
 				<Tbody>
@@ -113,28 +113,28 @@ const SpeakerStandings = ({ tournamentId }) => {
 
 						return (
 							<Tr key={speaker._id} _hover={{ bg: headerBg }} transition="all 0.2s">
-								<Td>
-									<HStack spacing={2}>
-										{medal.icon && <Text fontSize="xl">{medal.icon}</Text>}
+								<Td px={2}>
+									<HStack spacing={1}>
+										{medal.icon && <Text fontSize="lg">{medal.icon}</Text>}
 										<Badge
 											colorScheme={rank <= 3 ? "purple" : "gray"}
 											borderRadius="full"
-											fontSize="md"
+											fontSize="xs"
 											px={2}
 										>
 											{rank}
 										</Badge>
 									</HStack>
 								</Td>
-								<Td>
-									<HStack spacing={3}>
+								<Td px={2}>
+									<HStack spacing={2}>
 										<Avatar
-											size="sm"
+											size="xs"
 											name={speaker.name}
 											src={speaker.profilePic}
 										/>
 										<VStack align="start" spacing={0}>
-											<Text fontWeight="bold" color={textColor}>
+											<Text fontSize="sm" fontWeight="semibold" color={textColor}>
 												{speaker.name}
 											</Text>
 											<Text fontSize="xs" color={mutedText}>
@@ -143,7 +143,7 @@ const SpeakerStandings = ({ tournamentId }) => {
 										</VStack>
 									</HStack>
 								</Td>
-								<Td>
+								<Td px={2}>
 									<VStack align="start" spacing={0}>
 										<Text fontSize="sm" color={textColor}>
 											{speaker.team?.name}
@@ -153,22 +153,22 @@ const SpeakerStandings = ({ tournamentId }) => {
 										</Text>
 									</VStack>
 								</Td>
-								<Td isNumeric>
+								<Td isNumeric px={2}>
 									<Badge
 										colorScheme={rank <= 3 ? "green" : "blue"}
-										fontSize="lg"
-										px={3}
+										fontSize="sm"
+										px={2}
 										borderRadius="full"
 									>
 										{speaker.averageScore.toFixed(2)}
 									</Badge>
 								</Td>
-								<Td isNumeric>
-									<Text fontWeight="semibold" color={textColor}>
+								<Td isNumeric px={2}>
+									<Text fontSize="sm" fontWeight="semibold" color={textColor}>
 										{speaker.totalScore.toFixed(1)}
 									</Text>
 								</Td>
-								<Td isNumeric>
+							<Td textAlign="center" px={2}>
 									<Text fontSize="sm" color={mutedText}>
 										{speaker.numSpeeches}
 									</Text>
