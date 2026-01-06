@@ -15,14 +15,14 @@ export const generateDraw = async (tournamentId, roundNumber) => {
 			throw new Error("Tournament not found");
 		}
 
-		// Get all active teams
+		// Get all confirmed teams
 		const teams = await Team.find({
 			tournament: tournamentId,
-			status: "active",
+			status: "confirmed",
 		});
 
 		if (teams.length === 0) {
-			throw new Error("No active teams found");
+			throw new Error("No confirmed teams found");
 		}
 
 		// Get the round
@@ -259,7 +259,7 @@ export const canGenerateDraw = async (tournamentId, roundNumber) => {
 
 	const teams = await Team.find({
 		tournament: tournamentId,
-		status: "active",
+		status: "confirmed",
 	});
 
 	const teamsPerRoom = tournament.format === "BP" ? 4 : 2;
