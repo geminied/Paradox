@@ -26,6 +26,8 @@ const registerTeam = async (req, res) => {
 		}
 
 		// Validate number of members based on format
+		// BP: 4 teams × 2 members = 8 speeches
+		// AP: 2 teams × 3 members = 6 speeches
 		const expectedMembers = tournament.speakersPerTeam || (tournament.format === "BP" ? 2 : 3);
 		if (members.length !== expectedMembers) {
 			return res.status(400).json({ 

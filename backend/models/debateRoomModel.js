@@ -61,6 +61,35 @@ const debateRoomSchema = mongoose.Schema(
 			enum: ["scheduled", "prep", "in-progress", "submitted", "judging", "completed"],
 			default: "scheduled",
 		},
+		// Timing
+		prepStartTime: Date,
+		prepDuration: {
+			type: Number,
+			default: 0.167, // minutes (10 seconds)
+		},
+		debateStartTime: Date,
+		speechDuration: {
+			type: Number,
+			default: 0.5, // minutes per speech (30 seconds)
+		},
+		currentSpeechNumber: {
+			type: Number,
+			default: 1,
+		},
+		currentSpeaker: {
+			type: mongoose.Schema.Types.ObjectId,
+			ref: "User",
+		},
+		speechDeadline: Date,
+		// Track submitted speeches
+		totalSpeeches: {
+			type: Number,
+			default: 0,
+		},
+		completedSpeeches: {
+			type: Number,
+			default: 0,
+		},
 		// Results
 		hasResults: {
 			type: Boolean,

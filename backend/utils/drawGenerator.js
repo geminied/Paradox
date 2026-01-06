@@ -280,6 +280,14 @@ export const canGenerateDraw = async (tournamentId, roundNumber) => {
 		return { canGenerate: false, reason: "Draw already generated for this round" };
 	}
 
+	// Check if motion exists for this round
+	if (!round.motion) {
+		return {
+			canGenerate: false,
+			reason: `No motion assigned for Round ${roundNumber}. Please create and assign a motion first.`,
+		};
+	}
+
 	return { canGenerate: true };
 };
 

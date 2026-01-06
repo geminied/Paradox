@@ -1,5 +1,6 @@
 import Motion from "../models/motionModel.js";
 import Tournament from "../models/tournamentModel.js";
+import Round from "../models/roundModel.js";
 
 // Create a motion for a tournament
 export const createMotion = async (req, res) => {
@@ -41,6 +42,17 @@ export const createMotion = async (req, res) => {
 		});
 
 		await motion.save();
+
+		// Link motion to round
+		const roundDoc = await Round.findOne({
+			tournament: tournamentId,
+			roundNumber: round,
+		});
+		
+		if (roundDoc) {
+			roundDoc.motion = motion._id;
+			await roundDoc.save();
+		}
 
 		res.status(201).json(motion);
 	} catch (error) {

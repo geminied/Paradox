@@ -21,6 +21,11 @@ import {
 	AlertDialogHeader,
 	AlertDialogContent,
 	AlertDialogOverlay,
+	Tabs,
+	TabList,
+	TabPanels,
+	Tab,
+	TabPanel,
 } from "@chakra-ui/react";
 import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
@@ -37,6 +42,7 @@ import {
 	FiPlay,
 	FiCheckCircle,
 	FiXCircle,
+	FiTrendingUp,
 } from "react-icons/fi";
 import { format, formatDistanceToNowStrict } from "date-fns";
 import useShowToast from "../hooks/useShowToast";
@@ -45,6 +51,7 @@ import MotionList from "../components/MotionList";
 import RegisterTeamModal from "../components/RegisterTeamModal";
 import TeamCard from "../components/TeamCard";
 import JudgeAssignmentModal from "../components/JudgeAssignmentModal";
+import StandingsPage from "./StandingsPage";
 
 const TournamentDetailPage = () => {
 	const { tournamentId } = useParams();
@@ -405,58 +412,92 @@ const TournamentDetailPage = () => {
 			</VStack>
 		</Box>
 
-		{/* Motions Section */}
-		<Box
-			bg={cardBg}
-			border="1px"
-			borderColor={borderColor}
-			borderRadius="3xl"
-			p={5}
-			mb={4}
-		>
-			<MotionList tournament={tournament} />
-		</Box>
+		{/* Tabs for Motions, Teams, Standings */}
+		<Tabs colorScheme="blue" variant="soft-rounded">
+			<TabList mb={4}>
+				<Tab>
+					<HStack spacing={2}>
+						<FiCalendar />
+						<Text>Motions</Text>
+					</HStack>
+				</Tab>
+				<Tab>
+					<HStack spacing={2}>
+						<FiUsers />
+						<Text>Teams ({teams.length})</Text>
+					</HStack>
+				</Tab>
+				<Tab>
+					<HStack spacing={2}>
+						<FiTrendingUp />
+						<Text>Standings</Text>
+					</HStack>
+				</Tab>
+			</TabList>
 
-		{/* Teams Section */}
-		<Box
-			bg={cardBg}
-			border="1px"
-			borderColor={borderColor}
-			borderRadius="3xl"
-			p={5}
-		>
-			<HStack justify="space-between" mb={4}>
-				<Text fontWeight="semibold" fontSize="lg" color={textColor}>
-					Registered Teams ({teams.length})
-				</Text>
-				{!isCreator && tournament.status === "registration" && (
-					<Button
-						size="sm"
-						colorScheme="blue"
-						borderRadius="full"
-						onClick={onRegisterTeamOpen}
+			<TabPanels>
+				{/* Motions Tab */}
+				<TabPanel p={0}>
+					<Box
+						bg={cardBg}
+						border="1px"
+						borderColor={borderColor}
+						borderRadius="3xl"
+						p={5}
 					>
-						Register Team
-					</Button>
-				)}
-			</HStack>
+						<MotionList tournament={tournament} />
+					</Box>
+				</TabPanel>
 
-			{loadingTeams ? (
-				<Flex justify="center" py={8}>
-					<Spinner />
-				</Flex>
-			) : teams.length === 0 ? (
-				<Text color={mutedText} textAlign="center" py={8}>
-					No teams registered yet
-				</Text>
-			) : (
-				<VStack spacing={3} align="stretch">
-					{teams.map((team) => (
-						<TeamCard key={team._id} team={team} onView={() => {}} />
-					))}
-				</VStack>
-			)}
-		</Box>
+				{/* Teams Tab */}
+				<TabPanel p={0}>
+					<Box
+						bg={cardBg}
+						border="1px"
+						borderColor={borderColor}
+						borderRadius="3xl"
+						p={5}
+					>
+						<HStack justify="space-between" mb={4}>
+							<Text fontWeight="semibold" fontSize="lg" color={textColor}>
+								Registered Teams
+							</Text>
+							{!isCreator && tournament.status === "registration" && (
+								<Button
+									size="sm"
+									colorScheme="blue"
+									borderRadius="full"
+									onClick={onRegisterTeamOpen}
+								>
+									Register Team
+								</Button>
+							)}
+						</HStack>
+
+						{loadingTeams ? (
+							<Flex justify="center" py={8}>
+								<Spinner />
+							</Flex>
+						) : teams.length === 0 ? (
+							<Text color={mutedText} textAlign="center" py={8}>
+								No teams registered yet
+							</Text>
+						) : (
+							<VStack spacing={3} align="stretch">
+								{teams.map((team) => (
+									<TeamCard key={team._id} team={team} onView={() => {}} />
+								))}
+							</VStack>
+						)}
+					</Box>
+				</TabPanel>
+
+				{/* Standings Tab */}
+				<TabPanel p={0}>
+					<StandingsPage tournamentId={tournamentId} />
+				</TabPanel>
+			</TabPanels>
+		</Tabs>
 
 		{/* Register Team Modal */}
 		<RegisterTeamModal

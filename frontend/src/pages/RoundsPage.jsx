@@ -177,6 +177,79 @@ const RoundsPage = () => {
 												)}
 											</HStack>
 
+											{/* Motion Display */}
+											{round.motion && (
+												<Box
+													p={4}
+													borderRadius="lg"
+													bg={useColorModeValue("blue.50", "rgba(66, 153, 225, 0.1)")}
+													border="1px"
+													borderColor={useColorModeValue("blue.200", "rgba(66, 153, 225, 0.3)")}
+												>
+													<VStack align="start" spacing={2}>
+														<HStack>
+															<Badge colorScheme="blue" variant="solid" borderRadius="full" fontSize="xs">
+																MOTION
+															</Badge>
+															{round.motion.isReleased ? (
+																<Badge colorScheme="green" variant="subtle" borderRadius="full" fontSize="xs">
+																	RELEASED
+																</Badge>
+															) : (
+																<Badge colorScheme="orange" variant="subtle" borderRadius="full" fontSize="xs">
+																	NOT RELEASED
+																</Badge>
+															)}
+														</HStack>
+														{round.motion.isReleased || isOrganizer ? (
+															<>
+																<Text fontSize="md" fontWeight="bold" color={textColor}>
+																	{round.motion.motionText}
+																</Text>
+																{round.motion.infoSlide && (
+																	<Box
+																		mt={2}
+																		p={3}
+																		bg={useColorModeValue("white", "#0a0a0a")}
+																		borderRadius="md"
+																		w="100%"
+																	>
+																		<Text fontSize="xs" fontWeight="semibold" color={mutedText} mb={1}>
+																			Info Slide
+																		</Text>
+																		<Text fontSize="sm" color={textColor}>
+																			{round.motion.infoSlide}
+																		</Text>
+																	</Box>
+																)}
+																<HStack spacing={4} mt={1}>
+																	<Text fontSize="xs" color={mutedText}>
+																		Prep Time: {round.motion.prepTime} minutes
+																	</Text>
+																</HStack>
+															</>
+														) : (
+															<Text fontSize="sm" color={mutedText} fontStyle="italic">
+																Motion will be revealed when released by organizers
+															</Text>
+														)}
+													</VStack>
+												</Box>
+											)}
+											{!round.motion && isOrganizer && (
+												<Box
+													p={4}
+													borderRadius="lg"
+													bg={useColorModeValue("orange.50", "rgba(237, 137, 54, 0.1)")}
+													border="1px"
+													borderColor={useColorModeValue("orange.200", "rgba(237, 137, 54, 0.3)")}
+												>
+													<Text fontSize="sm" color={textColor}>
+														⚠️ No motion created for this round yet
+													</Text>
+												</Box>
+											)}
+
 											{/* Draw Display */}
 											<DrawDisplay
 												tournament={tournament}

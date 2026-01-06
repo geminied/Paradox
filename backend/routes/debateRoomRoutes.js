@@ -6,6 +6,10 @@ import {
 	getTeamDebates,
 	getJudgeDebates,
 	updateDebateStatus,
+	startPrep,
+	startDebate,
+	advanceTurn,
+	completeDebate,
 } from "../controllers/debateRoomController.js";
 import protectRoute from "../middlewares/protectRoute.js";
 
@@ -28,5 +32,11 @@ router.get("/judge/my-debates", protectRoute, getJudgeDebates);
 
 // Update debate status
 router.patch("/:debateId/status", protectRoute, updateDebateStatus);
+
+// Debate timing management
+router.post("/:debateId/start-prep", protectRoute, startPrep);
+router.post("/:debateId/start-debate", protectRoute, startDebate);
+router.post("/:debateId/advance-turn", protectRoute, advanceTurn);
+router.post("/:debateId/complete", protectRoute, completeDebate);
 
 export default router;
