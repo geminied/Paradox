@@ -48,6 +48,25 @@ const CreateMotionModal = ({ isOpen, onClose, tournament, onMotionCreated }) => 
 
 		setIsLoading(true);
 		try {
+			// Calculate preliminary rounds based on tournament structure
+			const breakTeams = tournament.breakingTeams || 8;
+			const totalRounds = tournament.numberOfRounds || 5;
+			const breakRoundsNeeded = breakTeams >= 8 ? 3 : breakTeams >= 4 ? 2 : breakTeams >= 2 ? 1 : 0;
+			const preliminaryRounds = totalRounds - breakRoundsNeeded;
+			
+			// Determine round type
+			let roundType = "preliminary";
+			if (formData.roundNumber > preliminaryRounds && breakRoundsNeeded > 0) {
+				const breakRoundIndex = formData.roundNumber - preliminaryRounds;
+				if (breakRoundsNeeded === 3) {
+					roundType = breakRoundIndex === 1 ? "break" : breakRoundIndex === 2 ? "semi" : "final";
+				} else if (breakRoundsNeeded === 2) {
+					roundType = breakRoundIndex === 1 ? "semi" : "final";
+				} else if (breakRoundsNeeded === 1) {
+					roundType = "final";
+				}
+			}
+			
 			const res = await fetch(`/api/motions/tournament/${tournament._id}`, {
 				method: "POST",
 				headers: { "Content-Type": "application/json" },
@@ -57,9 +76,7 @@ const CreateMotionModal = ({ isOpen, onClose, tournament, onMotionCreated }) => 
 					infoSlide: formData.infoSlide,
 					motionType: formData.motionType,
 					prepTime: formData.prepTime,
-					roundType: formData.roundNumber <= tournament.numberOfRounds - tournament.breakingTeams / 4
-						? "preliminary"
-						: "break",
+					roundType: roundType,
 				}),
 			});
 

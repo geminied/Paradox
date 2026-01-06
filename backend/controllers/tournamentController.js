@@ -3,7 +3,10 @@ import User from "../models/userModel.js";
 import Round from "../models/roundModel.js";
 import DebateRoom from "../models/debateRoomModel.js";
 import Motion from "../models/motionModel.js";
+import Team from "../models/teamModel.js";
+import mongoose from "mongoose";
 import { generateCompleteDraw } from "../services/drawGenerator.js";
+import applyTieBreakers from "../utils/tieBreakers.js";
 
 // Create a new tournament
 const createTournament = async (req, res) => {
@@ -58,12 +61,36 @@ const createTournament = async (req, res) => {
 		// Automatically create rounds for the tournament
 		const rounds = [];
 		const totalRounds = numberOfRounds || 5;
+		const breakTeams = breakingTeams || 8;
+		
+		// Calculate preliminary rounds
+		// If breakingTeams = 8, we need QF, SF, Final = 3 break rounds
+		// If breakingTeams = 4, we need SF, Final = 2 break rounds
+		const breakRoundsNeeded = breakTeams >= 8 ? 3 : breakTeams >= 4 ? 2 : breakTeams >= 2 ? 1 : 0;
+		const preliminaryRounds = totalRounds - breakRoundsNeeded;
 		
 		for (let i = 1; i <= totalRounds; i++) {
+			let roundType = "preliminary";
+			
+			// Determine round type based on position
+			if (i > preliminaryRounds) {
+				const breakRoundIndex = i - preliminaryRounds;
+				if (breakRoundsNeeded === 3) {
+					// QF, SF, Final
+					roundType = breakRoundIndex === 1 ? "break" : breakRoundIndex === 2 ? "semi" : "final";
+				} else if (breakRoundsNeeded === 2) {
+					// SF, Final
+					roundType = breakRoundIndex === 1 ? "semi" : "final";
+				} else if (breakRoundsNeeded === 1) {
+					// Final only
+					roundType = "final";
+				}
+			}
+			
 			const round = new Round({
 				tournament: newTournament._id,
 				roundNumber: i,
-				roundType: "preliminary",
+				roundType: roundType,
 				status: "scheduled",
 			});
 			await round.save();
@@ -553,6 +580,117 @@ const deleteDraw = async (req, res) => {
 	}
 };
 
+// Get tournament standings with tie-breakers
+const getStandings = async (req, res) => {
+	try {
+		const { tournamentId } = req.params;
+
+		// Find all teams in tournament
+		const teams = await Team.find({ tournament: tournamentId })
+			.populate('members', 'name username profilePic')
+			.populate('captain', 'name username')
+			.sort({ totalPoints: -1, totalSpeaks: -1 });
+
+		console.log(`[Standings] Found ${teams.length} teams for tournament ${tournamentId}`);
+		console.log(`[Standings] Teams data:`, teams.map(t => ({ 
+			name: t.name, 
+			totalPoints: t.totalPoints, 
+			totalSpeaks: t.totalSpeaks 
+		})));
+
+		// If no teams, return empty array (valid state before any rounds)
+		if (!teams || teams.length === 0) {
+			return res.status(200).json([]);
+		}
+
+		// Apply comprehensive tie-breaking
+		const rankedTeams = await applyTieBreakers(teams, tournamentId);
+		
+		console.log(`[Standings] After tie-breaking:`, rankedTeams.map(t => ({ 
+			rank: t.rank, 
+			name: t.name, 
+			totalPoints: t.totalPoints 
+		})));
+
+		res.status(200).json(rankedTeams);
+	} catch (error) {
+		res.status(500).json({ error: error.message });
+		console.log("Error in getStandings: ", error.message);
+	}
+};
+
+// Get speaker standings across tournament
+const getSpeakerStandings = async (req, res) => {
+	try {
+		const { tournamentId } = req.params;
+
+		// Aggregate speaker scores from all completed debates
+		const speakerStats = await DebateRoom.aggregate([
+			{
+				$match: {
+					tournament: new mongoose.Types.ObjectId(tournamentId),
+					hasResults: true
+				}
+			},
+			{ $unwind: "$teams" },
+			{ $unwind: "$teams.speakerScores" },
+			{
+				$group: {
+					_id: "$teams.speakerScores.speaker",
+					totalScore: { $sum: "$teams.speakerScores.score" },
+					numSpeeches: { $count: {} },
+					teamId: { $first: "$teams.team" }
+				}
+			},
+			{
+				$addFields: {
+					averageScore: { $divide: ["$totalScore", "$numSpeeches"] }
+				}
+			},
+			{
+				$lookup: {
+					from: "users",
+					localField: "_id",
+					foreignField: "_id",
+					as: "speakerInfo"
+				}
+			},
+			{
+				$lookup: {
+					from: "teams",
+					localField: "teamId",
+					foreignField: "_id",
+					as: "teamInfo"
+				}
+			},
+			{ $unwind: "$speakerInfo" },
+			{ $unwind: "$teamInfo" },
+			{
+				$project: {
+					_id: 1,
+					name: "$speakerInfo.name",
+					username: "$speakerInfo.username",
+					profilePic: "$speakerInfo.profilePic",
+					team: {
+						_id: "$teamInfo._id",
+						name: "$teamInfo.name",
+						institution: "$teamInfo.institution"
+					},
+					totalScore: 1,
+					numSpeeches: 1,
+					averageScore: 1
+				}
+			},
+			{ $sort: { averageScore: -1, totalScore: -1 } }
+		]);
+
+		res.status(200).json(speakerStats);
+	} catch (error) {
+		res.status(500).json({ error: error.message });
+		console.log("Error in getSpeakerStandings: ", error.message);
+	}
+};
+
 export {
 	createTournament,
 	getTournaments,
@@ -570,4 +708,6 @@ export {
 	generateDraw,
 	getDraw,
 	deleteDraw,
+	getStandings,
+	getSpeakerStandings,
 };

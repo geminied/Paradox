@@ -12,6 +12,7 @@ import teamRoutes from "./routes/teamRoutes.js";
 import roundRoutes from "./routes/roundRoutes.js";
 import debateRoomRoutes from "./routes/debateRoomRoutes.js";
 import speechRoutes from "./routes/speechRoutes.js";
+import ballotRoutes from "./routes/ballotRoutes.js";
 import cors from "cors";
 
 dotenv.config();
@@ -38,5 +39,6 @@ app.use("/api/teams", teamRoutes);
 app.use("/api/rounds", roundRoutes);
 app.use("/api/debate-rooms", debateRoomRoutes);
 app.use("/api/speeches", speechRoutes);
+app.use("/api/ballots", ballotRoutes);
 
 app.listen(PORT, () => console.log(`Server started at http://localhost:${PORT}`));

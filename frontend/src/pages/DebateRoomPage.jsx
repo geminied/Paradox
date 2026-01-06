@@ -19,6 +19,7 @@ import useShowToast from "../hooks/useShowToast";
 import DebateTimer from "../components/DebateTimer";
 import SpeechSubmissionForm from "../components/SpeechSubmissionForm";
 import DebateTranscript from "../components/DebateTranscript";
+import DebateResults from "../components/DebateResults";
 
 const DebateRoomPage = () => {
 	const { debateId } = useParams();
@@ -28,6 +29,7 @@ const DebateRoomPage = () => {
 
 	const [debate, setDebate] = useState(null);
 	const [speeches, setSpeeches] = useState([]);
+	const [ballotStatus, setBallotStatus] = useState(null);
 	const [isLoading, setIsLoading] = useState(true);
 	const [isStarting, setIsStarting] = useState(false);
 
@@ -35,12 +37,17 @@ const DebateRoomPage = () => {
 	const borderColor = useColorModeValue("gray.200", "#333333");
 	const textColor = useColorModeValue("gray.900", "white");
 	const mutedText = useColorModeValue("gray.500", "#888888");
+	const motionBg = useColorModeValue("blue.50", "rgba(66, 153, 225, 0.1)");
+	const motionBorderColor = useColorModeValue("blue.200", "rgba(66, 153, 225, 0.3)");
+	const teamBg = useColorModeValue("gray.50", "#0a0a0a");
+	const infoSlideBg = useColorModeValue("white", "#0a0a0a");
 
 	useEffect(() => {
 		const initialLoad = async () => {
 			setIsLoading(true);
 			await fetchDebate();
 			await fetchSpeeches();
+			await fetchBallotStatus();
 			setIsLoading(false);
 		};
 		
@@ -50,6 +57,7 @@ const DebateRoomPage = () => {
 		const interval = setInterval(() => {
 			fetchDebate();
 			fetchSpeeches();
+			fetchBallotStatus();
 		}, 500);
 
 		return () => clearInterval(interval);
@@ -75,6 +83,18 @@ const DebateRoomPage = () => {
 			}
 		} catch (error) {
 			console.error(error);
+		}
+	};
+
+	const fetchBallotStatus = async () => {
+		try {
+			const res = await fetch(`/api/ballots/debate/${debateId}/status`);
+			const data = await res.json();
+			if (res.ok) {
+				setBallotStatus(data);
+			}
+		} catch (error) {
+			console.error("Error fetching ballot status:", error);
 		}
 	};
 
@@ -259,9 +279,9 @@ const DebateRoomPage = () => {
 							<Box
 								p={4}
 								borderRadius="lg"
-								bg={useColorModeValue("blue.50", "rgba(66, 153, 225, 0.1)")}
+								bg={motionBg}
 								border="1px"
-								borderColor={useColorModeValue("blue.200", "rgba(66, 153, 225, 0.3)")}
+								borderColor={motionBorderColor}
 							>
 								<VStack align="start" spacing={2}>
 									<Badge colorScheme="blue" variant="solid" borderRadius="full" fontSize="xs">
@@ -274,7 +294,7 @@ const DebateRoomPage = () => {
 										<Box
 											mt={2}
 											p={3}
-											bg={useColorModeValue("white", "#0a0a0a")}
+											bg={infoSlideBg}
 											borderRadius="md"
 											w="100%"
 										>
@@ -308,7 +328,7 @@ const DebateRoomPage = () => {
 										key={teamInfo.team._id}
 										p={3}
 										borderRadius="lg"
-										bg={useColorModeValue("gray.50", "#0a0a0a")}
+										bg={teamBg}
 									>
 										<HStack spacing={2} mb={2}>
 											<Badge colorScheme="blue" variant="solid" borderRadius="full">
@@ -407,6 +427,58 @@ const DebateRoomPage = () => {
 				/>
 				)}
 
+				{/* Judge Ballot Button & Status */}
+				{isJudge && (debate.status === "submitted" || debate.status === "judging") && !debate.hasResults && (
+					<Box
+						bg={cardBg}
+						border="1px"
+						borderColor={borderColor}
+						borderRadius="3xl"
+						p={4}
+					>
+						<VStack spacing={3}>
+							{ballotStatus && (
+								<HStack spacing={2} w="full" justify="center">
+									<Badge colorScheme="blue" fontSize="sm" px={3} py={1} borderRadius="full">
+										Ballots: {ballotStatus.progress}
+									</Badge>
+									{ballotStatus.isComplete && (
+										<Badge colorScheme="green" fontSize="sm" px={3} py={1} borderRadius="full">
+											✓ All Submitted
+										</Badge>
+									)}
+								</HStack>
+							)}
+							<Text fontSize="sm" color={mutedText} textAlign="center">
+								{ballotStatus?.ballots?.find(b => b.judge._id === user?._id)?.status === "submitted" 
+									? "Your ballot submitted. Waiting for other judges."
+									: "All speeches submitted. Ready for judging."}
+							</Text>
+							{ballotStatus?.ballots?.find(b => b.judge._id === user?._id)?.status !== "submitted" && (
+								<Button
+									colorScheme="purple"
+									size="lg"
+									onClick={() => navigate(`/ballot/${debateId}`)}
+									borderRadius="full"
+									w="full"
+								>
+									Submit Ballot
+								</Button>
+							)}
+							{ballotStatus?.ballots?.find(b => b.judge._id === user?._id)?.status === "submitted" && (
+								<Button
+									variant="outline"
+									size="sm"
+									onClick={() => navigate(`/ballot/${debateId}`)}
+									borderRadius="full"
+								>
+									View My Ballot
+								</Button>
+							)}
+						</VStack>
+					</Box>
+				)}
+
 				{/* Control Buttons (for judges/creators) */}
 				{canControl && (
 					<Box
@@ -461,6 +533,11 @@ const DebateRoomPage = () => {
 							)}
 						</HStack>
 					</Box>
+				)}
+
+				{/* Debate Results */}
+				{debate.hasResults && debate.status === "completed" && (
+					<DebateResults debate={debate} currentUser={user} />
 				)}
 
 				{/* Debate Transcript */}

@@ -16,6 +16,8 @@ import {
 	generateDraw,
 	getDraw,
 	deleteDraw,
+	getStandings,
+	getSpeakerStandings,
 } from "../controllers/tournamentController.js";
 import protectRoute from "../middlewares/protectRoute.js";
 
@@ -48,5 +50,9 @@ router.get("/:tournamentId/rounds", getRounds);
 router.post("/rounds/:roundId/generate-draw", protectRoute, generateDraw);
 router.get("/rounds/:roundId/draw", getDraw);
 router.delete("/rounds/:roundId/draw", protectRoute, deleteDraw);
+
+// Standings routes
+router.get("/:tournamentId/standings", getStandings);
+router.get("/:tournamentId/speakers", getSpeakerStandings);
 
 export default router;
