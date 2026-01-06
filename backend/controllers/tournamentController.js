@@ -7,6 +7,7 @@ import Team from "../models/teamModel.js";
 import mongoose from "mongoose";
 import { generateCompleteDraw } from "../services/drawGenerator.js";
 import applyTieBreakers from "../utils/tieBreakers.js";
+import * as breakService from "../services/breakService.js";
 
 // Create a new tournament
 const createTournament = async (req, res) => {
@@ -691,6 +692,194 @@ const getSpeakerStandings = async (req, res) => {
 	}
 };
 
+// ==================== BREAK & ELIMINATION ROUNDS ====================
+
+/**
+ * Calculate and announce the break
+ * POST /api/tournaments/:tournamentId/break/announce
+ */
+const announceBreak = async (req, res) => {
+	try {
+		const { tournamentId } = req.params;
+
+		// Verify tournament exists and user is creator
+		const tournament = await Tournament.findById(tournamentId);
+		if (!tournament) {
+			return res.status(404).json({ error: "Tournament not found" });
+		}
+
+		if (tournament.creator.toString() !== req.user._id.toString()) {
+			return res.status(403).json({ error: "Only tournament creator can announce break" });
+		}
+
+		// Calculate break
+		const breakData = await breakService.calculateBreak(tournamentId);
+
+		res.status(200).json({
+			message: "Break announced successfully",
+			...breakData
+		});
+	} catch (error) {
+		res.status(500).json({ error: error.message });
+		console.log("Error in announceBreak: ", error.message);
+	}
+};
+
+/**
+ * Generate quarterfinals draw
+ * POST /api/tournaments/:tournamentId/break/quarterfinals
+ */
+const generateQuarterfinals = async (req, res) => {
+	try {
+		const { tournamentId } = req.params;
+
+		// Verify tournament exists and user is creator
+		const tournament = await Tournament.findById(tournamentId);
+		if (!tournament) {
+			return res.status(404).json({ error: "Tournament not found" });
+		}
+
+		if (tournament.creator.toString() !== req.user._id.toString()) {
+			return res.status(403).json({ error: "Only tournament creator can generate quarterfinals" });
+		}
+
+		// Generate QF draw
+		const qfData = await breakService.generateQuarterfinals(tournamentId);
+
+		res.status(200).json({
+			message: qfData.message,
+			round: qfData.round,
+			debates: qfData.debates
+		});
+	} catch (error) {
+		res.status(500).json({ error: error.message });
+		console.log("Error in generateQuarterfinals: ", error.message);
+	}
+};
+
+/**
+ * Generate semifinals draw
+ * POST /api/tournaments/:tournamentId/break/semifinals
+ */
+const generateSemifinals = async (req, res) => {
+	try {
+		const { tournamentId } = req.params;
+		const { qfRoundId } = req.body;
+
+		if (!qfRoundId) {
+			return res.status(400).json({ error: "Quarterfinal round ID is required" });
+		}
+
+		// Verify tournament exists and user is creator
+		const tournament = await Tournament.findById(tournamentId);
+		if (!tournament) {
+			return res.status(404).json({ error: "Tournament not found" });
+		}
+
+		if (tournament.creator.toString() !== req.user._id.toString()) {
+			return res.status(403).json({ error: "Only tournament creator can generate semifinals" });
+		}
+
+		// Generate SF draw
+		const sfData = await breakService.generateSemifinals(tournamentId, qfRoundId);
+
+		res.status(200).json({
+			message: sfData.message,
+			round: sfData.round,
+			debates: sfData.debates,
+			advancingTeams: sfData.advancingTeams
+		});
+	} catch (error) {
+		res.status(500).json({ error: error.message });
+		console.log("Error in generateSemifinals: ", error.message);
+	}
+};
+
+/**
+ * Generate grand final
+ * POST /api/tournaments/:tournamentId/break/finals
+ */
+const generateGrandFinal = async (req, res) => {
+	try {
+		const { tournamentId } = req.params;
+		const { sfRoundId } = req.body;
+
+		if (!sfRoundId) {
+			return res.status(400).json({ error: "Semifinal round ID is required" });
+		}
+
+		// Verify tournament exists and user is creator
+		const tournament = await Tournament.findById(tournamentId);
+		if (!tournament) {
+			return res.status(404).json({ error: "Tournament not found" });
+		}
+
+		if (tournament.creator.toString() !== req.user._id.toString()) {
+			return res.status(403).json({ error: "Only tournament creator can generate grand final" });
+		}
+
+		// Generate GF
+		const gfData = await breakService.generateGrandFinal(tournamentId, sfRoundId);
+
+		res.status(200).json({
+			message: gfData.message,
+			round: gfData.round,
+			debate: gfData.debate,
+			finalists: gfData.finalists
+		});
+	} catch (error) {
+		res.status(500).json({ error: error.message });
+		console.log("Error in generateGrandFinal: ", error.message);
+	}
+};
+
+/**
+ * Get elimination bracket structure
+ * GET /api/tournaments/:tournamentId/break/bracket
+ */
+const getEliminationBracket = async (req, res) => {
+	try {
+		const { tournamentId } = req.params;
+
+		const bracket = await breakService.getEliminationBracket(tournamentId);
+
+		res.status(200).json(bracket);
+	} catch (error) {
+		res.status(500).json({ error: error.message });
+		console.log("Error in getEliminationBracket: ", error.message);
+	}
+};
+
+/**
+ * Complete tournament
+ * POST /api/tournaments/:tournamentId/complete
+ */
+const completeTournamentController = async (req, res) => {
+	try {
+		const { tournamentId } = req.params;
+
+		// Verify tournament exists and user is creator
+		const tournament = await Tournament.findById(tournamentId);
+		if (!tournament) {
+			return res.status(404).json({ error: "Tournament not found" });
+		}
+
+		if (tournament.creator.toString() !== req.user._id.toString()) {
+			return res.status(403).json({ error: "Only tournament creator can complete tournament" });
+		}
+
+		const result = await breakService.completeTournament(tournamentId);
+
+		res.status(200).json({
+			message: result.message,
+			champion: result.champion
+		});
+	} catch (error) {
+		res.status(500).json({ error: error.message });
+		console.log("Error in completeTournamentController: ", error.message);
+	}
+};
+
 export {
 	createTournament,
 	getTournaments,
@@ -710,4 +899,10 @@ export {
 	deleteDraw,
 	getStandings,
 	getSpeakerStandings,
+	announceBreak,
+	generateQuarterfinals,
+	generateSemifinals,
+	generateGrandFinal,
+	getEliminationBracket,
+	completeTournamentController,
 };

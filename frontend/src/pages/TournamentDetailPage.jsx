@@ -43,6 +43,7 @@ import {
 	FiCheckCircle,
 	FiXCircle,
 	FiTrendingUp,
+	FiAward,
 } from "react-icons/fi";
 import { format, formatDistanceToNowStrict } from "date-fns";
 import useShowToast from "../hooks/useShowToast";
@@ -52,6 +53,7 @@ import RegisterTeamModal from "../components/RegisterTeamModal";
 import TeamCard from "../components/TeamCard";
 import JudgeAssignmentModal from "../components/JudgeAssignmentModal";
 import StandingsPage from "./StandingsPage";
+import BreakPage from "./BreakPage";
 
 const TournamentDetailPage = () => {
 	const { tournamentId } = useParams();
@@ -433,6 +435,12 @@ const TournamentDetailPage = () => {
 						<Text>Standings</Text>
 					</HStack>
 				</Tab>
+				<Tab>
+					<HStack spacing={2}>
+						<FiAward />
+						<Text>Break</Text>
+					</HStack>
+				</Tab>
 			</TabList>
 
 			<TabPanels>
@@ -495,6 +503,15 @@ const TournamentDetailPage = () => {
 				{/* Standings Tab */}
 				<TabPanel p={0}>
 					<StandingsPage tournamentId={tournamentId} />
+				</TabPanel>
+
+				{/* Break Tab */}
+				<TabPanel p={0}>
+					<BreakPage 
+						tournamentId={tournamentId} 
+						tournament={tournament}
+						isOrganizer={isCreator}
+					/>
 				</TabPanel>
 			</TabPanels>
 		</Tabs>
