@@ -44,6 +44,7 @@ import {
 	FiXCircle,
 	FiTrendingUp,
 	FiAward,
+	FiArchive,
 } from "react-icons/fi";
 import { format, formatDistanceToNowStrict } from "date-fns";
 import useShowToast from "../hooks/useShowToast";
@@ -167,6 +168,27 @@ const TournamentDetailPage = () => {
 		}
 	};
 
+	const handleArchive = async () => {
+		try {
+			const endpoint = tournament.isArchived ? "unarchive" : "archive";
+			const res = await fetch(`/api/tournaments/${tournamentId}/${endpoint}`, {
+				method: "POST",
+			});
+			const data = await res.json();
+			if (!res.ok) throw new Error(data.error);
+
+			setTournament(data.tournament);
+			showToast("Success", data.message, "success");
+			
+			// Optionally navigate to competitions page after archiving
+			if (!tournament.isArchived) {
+				navigate("/competitions");
+			}
+		} catch (error) {
+			showToast("Error", error.message, "error");
+		}
+	};
+
 	const handleTournamentUpdated = (updatedTournament) => {
 		setTournament(updatedTournament);
 	};
@@ -287,6 +309,26 @@ const TournamentDetailPage = () => {
 										isDisabled={isUpdatingStatus}
 									>
 										Complete
+									</MenuItem>
+								)}
+								{tournament.status === "completed" && !tournament.isArchived && (
+									<MenuItem 
+										icon={<FiArchive />} 
+										onClick={handleArchive}
+										bg={cardBg}
+										_hover={{ bg: hoverBg }}
+									>
+										Archive Tournament
+									</MenuItem>
+								)}
+								{tournament.isArchived && (
+									<MenuItem 
+										icon={<FiArchive />} 
+										onClick={handleArchive}
+										bg={cardBg}
+										_hover={{ bg: hoverBg }}
+									>
+										Unarchive Tournament
 									</MenuItem>
 								)}
 								{!["completed", "cancelled"].includes(tournament.status) && (

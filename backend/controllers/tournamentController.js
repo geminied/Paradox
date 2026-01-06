@@ -115,12 +115,20 @@ const createTournament = async (req, res) => {
 // Get all tournaments
 const getTournaments = async (req, res) => {
 	try {
-		const { status, category, format } = req.query;
-		
+		const { status, category, format, archived } = req.query;
+
 		let filter = {};
 		if (status) filter.status = status;
 		if (category) filter.category = category;
 		if (format) filter.format = format;
+		
+		// Handle archived filter
+		if (archived === "true") {
+			filter.isArchived = true;
+		} else {
+			// Default: show only non-archived tournaments (isArchived is false or doesn't exist)
+			filter.isArchived = { $ne: true };
+		}
 
 		const tournaments = await Tournament.find(filter)
 			.populate("creator", "name username")
@@ -592,13 +600,6 @@ const getStandings = async (req, res) => {
 			.populate('captain', 'name username')
 			.sort({ totalPoints: -1, totalSpeaks: -1 });
 
-		console.log(`[Standings] Found ${teams.length} teams for tournament ${tournamentId}`);
-		console.log(`[Standings] Teams data:`, teams.map(t => ({ 
-			name: t.name, 
-			totalPoints: t.totalPoints, 
-			totalSpeaks: t.totalSpeaks 
-		})));
-
 		// If no teams, return empty array (valid state before any rounds)
 		if (!teams || teams.length === 0) {
 			return res.status(200).json([]);
@@ -606,12 +607,6 @@ const getStandings = async (req, res) => {
 
 		// Apply comprehensive tie-breaking
 		const rankedTeams = await applyTieBreakers(teams, tournamentId);
-		
-		console.log(`[Standings] After tie-breaking:`, rankedTeams.map(t => ({ 
-			rank: t.rank, 
-			name: t.name, 
-			totalPoints: t.totalPoints 
-		})));
 
 		res.status(200).json(rankedTeams);
 	} catch (error) {
@@ -880,6 +875,83 @@ const completeTournamentController = async (req, res) => {
 	}
 };
 
+// Archive tournament (only creator, only if completed)
+const archiveTournament = async (req, res) => {
+	try {
+		const { tournamentId } = req.params;
+
+		const tournament = await Tournament.findById(tournamentId);
+		if (!tournament) {
+			return res.status(404).json({ error: "Tournament not found" });
+		}
+
+		// Only creator can archive
+		if (tournament.creator.toString() !== req.user._id.toString()) {
+			return res.status(403).json({ error: "Only the creator can archive this tournament" });
+		}
+
+		// Can only archive completed tournaments
+		if (tournament.status !== "completed") {
+			return res.status(400).json({ error: "Only completed tournaments can be archived" });
+		}
+
+		// Check if already archived
+		if (tournament.isArchived) {
+			return res.status(400).json({ error: "Tournament is already archived" });
+		}
+
+		// Archive the tournament
+		tournament.isArchived = true;
+		tournament.archivedAt = new Date();
+		tournament.archivedBy = req.user._id;
+		await tournament.save();
+
+		res.status(200).json({ 
+			message: "Tournament archived successfully", 
+			tournament 
+		});
+	} catch (error) {
+		res.status(500).json({ error: error.message });
+		console.log("Error in archiveTournament: ", error.message);
+	}
+};
+
+// Unarchive tournament (only creator)
+const unarchiveTournament = async (req, res) => {
+	try {
+		const { tournamentId } = req.params;
+
+		const tournament = await Tournament.findById(tournamentId);
+		if (!tournament) {
+			return res.status(404).json({ error: "Tournament not found" });
+		}
+
+		// Only creator can unarchive
+		if (tournament.creator.toString() !== req.user._id.toString()) {
+			return res.status(403).json({ error: "Only the creator can unarchive this tournament" });
+		}
+
+		// Check if actually archived
+		if (!tournament.isArchived) {
+			return res.status(400).json({ error: "Tournament is not archived" });
+		}
+
+		// Unarchive the tournament
+		tournament.isArchived = false;
+		tournament.archivedAt = null;
+		tournament.archivedBy = null;
+		await tournament.save();
+
+		res.status(200).json({ 
+			message: "Tournament unarchived successfully", 
+			tournament 
+		});
+	} catch (error) {
+		res.status(500).json({ error: error.message });
+		console.log("Error in unarchiveTournament: ", error.message);
+	}
+};
+
 export {
 	createTournament,
 	getTournaments,
@@ -905,4 +977,6 @@ export {
 	generateGrandFinal,
 	getEliminationBracket,
 	completeTournamentController,
+	archiveTournament,
+	unarchiveTournament,
 };

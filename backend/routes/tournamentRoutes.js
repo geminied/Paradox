@@ -24,6 +24,8 @@ import {
 	generateGrandFinal,
 	getEliminationBracket,
 	completeTournamentController,
+	archiveTournament,
+	unarchiveTournament,
 } from "../controllers/tournamentController.js";
 import protectRoute from "../middlewares/protectRoute.js";
 
@@ -68,5 +70,9 @@ router.post("/:tournamentId/break/semifinals", protectRoute, generateSemifinals)
 router.post("/:tournamentId/break/finals", protectRoute, generateGrandFinal);
 router.get("/:tournamentId/break/bracket", getEliminationBracket);
 router.post("/:tournamentId/complete", protectRoute, completeTournamentController);
+
+// Archive routes
+router.post("/:tournamentId/archive", protectRoute, archiveTournament);
+router.post("/:tournamentId/unarchive", protectRoute, unarchiveTournament);
 
 export default router;
