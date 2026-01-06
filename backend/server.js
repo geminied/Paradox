@@ -28,7 +28,7 @@ app.use(express.urlencoded({ extended: true })); // To parse form data in the re
 app.use(cookieParser());
 
 app.use(cors({
-  origin: process.env.FRONTEND_URL || "http://localhost:3000/",
+  origin: process.env.FRONTEND_URL || "http://localhost:3000",
   credentials: true
 }));
 // Routes
