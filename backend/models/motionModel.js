@@ -13,7 +13,7 @@ const motionSchema = new mongoose.Schema(
 		},
 		roundType: {
 			type: String,
-			enum: ["preliminary", "quarterfinal", "semifinal", "final", "octo", "double-octo"],
+			enum: ["preliminary", "break", "semi", "final", "petite-final"],
 			default: "preliminary",
 		},
 		motionText: {

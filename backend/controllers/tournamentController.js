@@ -2,6 +2,7 @@ import Tournament from "../models/tournamentModel.js";
 import User from "../models/userModel.js";
 import Round from "../models/roundModel.js";
 import DebateRoom from "../models/debateRoomModel.js";
+import Motion from "../models/motionModel.js";
 import { generateCompleteDraw } from "../services/drawGenerator.js";
 
 // Create a new tournament
@@ -269,6 +270,19 @@ const updateTournamentStatus = async (req, res) => {
 		const validStatuses = ["draft", "registration", "ongoing", "completed", "cancelled"];
 		if (!validStatuses.includes(status)) {
 			return res.status(400).json({ error: "Invalid status" });
+		}
+
+		// If changing to 'ongoing', validate that all rounds have motions
+		if (status === "ongoing" && tournament.status !== "ongoing") {
+			const rounds = await Round.find({ tournament: id });
+			const roundsWithoutMotions = rounds.filter(round => !round.motion);
+			
+			if (roundsWithoutMotions.length > 0) {
+				const roundNumbers = roundsWithoutMotions.map(r => r.roundNumber).join(", ");
+				return res.status(400).json({
+					error: `Cannot start tournament. The following rounds are missing motions: Round ${roundNumbers}. Please create motions for all rounds first.`
+				});
+			}
 		}
 
 		tournament.status = status;

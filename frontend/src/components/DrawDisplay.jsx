@@ -11,11 +11,13 @@ import {
 	Spinner,
 } from "@chakra-ui/react";
 import { useState, useEffect } from "react";
-import { FiTarget, FiRefreshCw, FiTrash2 } from "react-icons/fi";
+import { useNavigate } from "react-router-dom";
+import { FiTarget, FiRefreshCw, FiTrash2, FiArrowRight } from "react-icons/fi";
 import useShowToast from "../hooks/useShowToast";
 
 const DrawDisplay = ({ tournament, roundNumber, isOrganizer }) => {
 	const showToast = useShowToast();
+	const navigate = useNavigate();
 	const [draw, setDraw] = useState([]);
 	const [round, setRound] = useState(null);
 	const [isLoading, setIsLoading] = useState(false);
@@ -204,12 +206,24 @@ const DrawDisplay = ({ tournament, roundNumber, isOrganizer }) => {
 						<VStack align="stretch" spacing={3}>
 							{/* Room Header */}
 							<HStack justify="space-between">
-								<Text fontWeight="bold" color={textColor}>
-									{room.roomName || `Room ${index + 1}`}
-								</Text>
-								<Badge colorScheme="blue" variant="subtle" borderRadius="full">
-									{room.status}
-								</Badge>
+								<VStack align="start" spacing={0}>
+									<Text fontWeight="bold" color={textColor}>
+										{room.roomName || `Room ${index + 1}`}
+									</Text>
+									<Badge colorScheme="blue" variant="subtle" borderRadius="full" fontSize="xs">
+										{room.status}
+									</Badge>
+								</VStack>
+								<Button
+									size="sm"
+									rightIcon={<FiArrowRight />}
+									colorScheme="blue"
+									variant="ghost"
+									borderRadius="full"
+									onClick={() => navigate(`/debate-room/${room._id}`)}
+								>
+									View Room
+								</Button>
 							</HStack>
 
 							<Divider />

@@ -10,7 +10,7 @@ const notificationSchema = mongoose.Schema(
 		sender: {
 			type: mongoose.Schema.Types.ObjectId,
 			ref: "User",
-			required: true,
+			required: false,
 		},
 		type: {
 			type: String,
@@ -20,6 +20,7 @@ const notificationSchema = mongoose.Schema(
 				"reply",            // Someone replied to your comment
 				"upvote",           // Someone upvoted your debate
 				"reaction",         // Someone reacted to your comment (samePoint/goodPoint)
+				"TEAM_REGISTERED",  // Someone added you to a tournament team
 			],
 			required: true,
 		},
@@ -38,6 +39,9 @@ const notificationSchema = mongoose.Schema(
 		message: {
 			type: String,
 			required: true,
+		},
+		link: {
+			type: String,
 		},
 	},
 	{
